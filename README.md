@@ -9,6 +9,6 @@
 ---
 
 ## Link
-Website: https://i0kyung.github.io/caffeine-people/
+ https://i0kyung.github.io/caffeine-people/
 ---
 
