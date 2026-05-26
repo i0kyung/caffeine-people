@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#F0ECEB" />
+  <title>오늘도 과부하 | Memo Board</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@kfonts/line-seed-sans-kr/index.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg: #F5F4F5;
+      --cream: #FFF9EA;
+      --paper: #FFFCF3;
+      --line: #E4D0AF;
+      --ink: #2B1B13;
+      --muted: #765D4D;
+      --accent: #FFE08A;
+      --coffee: #6B3A2A;
+      --coffee-dark: #3B2117;
+      --postit-yellow: #FFE991;
+      --postit-pink: #FFD5D7;
+      --postit-green: #D7EDC7;
+      --postit-blue: #D5E5F4;
+      --font-kr: "LINE Seed Sans KR", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      --font-hand: "Caveat", cursive;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: var(--font-kr);
+      color: var(--ink);
+    }
+
+    button, input {
+      font-family: inherit;
+      border: none;
+      background: none;
+      color: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button { cursor: pointer; }
+    img { display: block; user-select: none; -webkit-user-drag: none; }
+    .hidden { display: none !important; }
+
+    .memo-page {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .cat-stage {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .cat-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      z-index: 1;
+      background: var(--bg);
+    }
+
+    .cat-stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        linear-gradient(to bottom,
+          rgba(45,27,19,0.2) 0%,
+          rgba(255,249,234,0.06) 20%,
+          rgba(255,249,234,0.04) 56%,
+          rgba(38,22,13,0.54) 100%);
+    }
+
+    .image-error {
+      position: absolute;
+      top: 96px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      width: calc(100% - 32px);
+      max-width: 380px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255, 235, 138, 0.96);
+      border: 2px solid var(--ink);
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      padding: max(12px, env(safe-area-inset-top)) 12px 8px;
+      background: linear-gradient(180deg, rgba(58, 33, 23, 0.42), rgba(58, 33, 23, 0));
+    }
+
+    .title-wrap {
+      justify-self: start;
+      padding: 9px 12px;
+      border: 1px solid rgba(255,255,255,0.36);
+      border-radius: 18px;
+      background: rgba(255, 252, 243, 0.84);
+      color: var(--coffee-dark);
+      box-shadow: 0 8px 22px rgba(37, 21, 13, 0.18);
+    }
+    .page-title {
+      font-size: 1.14rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .page-sub {
+      margin-top: 3px;
+      font-size: 0.67rem;
+      font-weight: 800;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+
+    .top-actions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      width: 100%;
+    }
+
+    .sticker-btn {
+      min-width: 0;
+      padding: 8px 6px;
+      border-radius: 14px;
+      background: rgba(255,252,243,0.9);
+      border: 1.5px solid rgba(228,208,175,0.96);
+      box-shadow: 0 6px 14px rgba(37,21,13,0.14);
+      color: var(--coffee-dark);
+      font-size: 0.73rem;
+      font-weight: 900;
+      white-space: nowrap;
+      text-align: center;
+    }
+    .sticker-btn.blue { background: #E8F1F8; }
+    .sticker-btn.green { background: #EEF7E4; }
+    .sticker-btn.pink { background: #FFF0F0; }
+    .sticker-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0 3px 8px rgba(37,21,13,0.12);
+    }
+
+    .sticky-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .sticky-note {
+      position: absolute;
+      width: 142px;
+      height: 112px;
+      padding: 18px 13px 10px;
+      background: var(--postit-yellow);
+      color: var(--ink);
+      border: 1px solid rgba(107, 58, 42, 0.13);
+      border-radius: 4px;
+      box-shadow: 0 12px 24px rgba(42, 25, 14, 0.2), inset 0 -8px 18px rgba(107, 58, 42, 0.05);
+      pointer-events: auto;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      word-break: keep-all;
+      overflow: hidden;
+      animation: noteIn 0.25s ease both;
+    }
+    .sticky-note.is-yellow { background: var(--postit-yellow); }
+    .sticky-note.is-pink { background: var(--postit-pink); }
+    .sticky-note.is-green { background: var(--postit-green); }
+    .sticky-note.is-blue { background: var(--postit-blue); }
+
+    .sticky-note::before {
+      content: "";
+      position: absolute;
+      top: -7px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      width: 44px;
+      height: 16px;
+      background: rgba(255, 250, 219, 0.74);
+      border: 1px solid rgba(176, 136, 73, 0.2);
+      border-radius: 2px;
+    }
+    .sticky-note.is-dragging {
+      cursor: grabbing;
+      z-index: 100;
+      transform: scale(1.04) rotate(0deg) !important;
+      box-shadow: 0 14px 28px rgba(0,0,0,0.35);
+    }
+    .board-sticker {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+      background: rgba(255, 252, 243, 0.88);
+      border: 1px solid rgba(228,208,175,0.9);
+      box-shadow: 0 10px 20px rgba(42,25,14,0.2);
+      font-size: 1.55rem;
+      pointer-events: auto;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      animation: noteIn 0.25s ease both;
+    }
+    .board-sticker.is-dragging {
+      cursor: grabbing;
+      z-index: 120;
+      transform: scale(1.08) !important;
+      box-shadow: 0 14px 26px rgba(42,25,14,0.28);
+    }
+    .note-text {
+      display: block;
+      height: 62px;
+      overflow: hidden;
+      font-weight: 650;
+    }
+    .note-meta {
+      position: absolute;
+      right: 10px;
+      bottom: 8px;
+      font-size: 0.63rem;
+      color: rgba(0,0,0,0.35);
+    }
+    @keyframes noteIn {
+      from { opacity: 0; transform: scale(0.72) rotate(-8deg); }
+      to { opacity: 1; }
+    }
+
+    /* ===== 묘지: 채팅 입력창 바로 위에 붙이고, 원형 배경 제거 ===== */
+    .graveyard {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(86px + env(safe-area-inset-bottom));
+      height: 48px;
+      z-index: 32;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .ground {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 20px;
+      background: linear-gradient(to bottom, #765529, #2D1908);
+      border-top: 2px solid #789C4A;
+    }
+    .ground::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -8px;
+      height: 10px;
+      background-image: repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 4px,
+        #2B771D 4px,
+        #2B771D 6px,
+        transparent 6px,
+        transparent 10px
+      );
+    }
+
+    .tomb-field {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+    }
+
+    .grave-item {
+      position: absolute;
+      bottom: 15px;
+      width: 20px;
+      height: 24px;
+      pointer-events: auto;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      border-radius: 0;
+      animation: graveRise 0.45s ease both;
+      transform-origin: bottom center;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .grave-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.45));
+    }
+    .grave-count { display: none; }
+    .grave-fallback {
+      font-size: 0.55rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+      line-height: 1;
+      text-align: center;
+    }
+    @keyframes graveRise {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .archive-strip {
+      position: absolute;
+      left: 10px;
+      bottom: calc(130px + env(safe-area-inset-bottom));
+      z-index: 30;
+      max-width: calc(100% - 20px);
+      color: rgba(255,255,255,0.78);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .input-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      padding: 8px 10px calc(9px + env(safe-area-inset-bottom));
+      background: rgba(255, 249, 234, 0.94);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(228, 208, 175, 0.9);
+      box-shadow: 0 -10px 24px rgba(39, 23, 14, 0.14);
+    }
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sticker-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 7px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .sticker-row::-webkit-scrollbar { display: none; }
+    .sticker-pick {
+      width: 30px;
+      height: 30px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: #fff;
+      border: 1px solid rgba(228,208,175,0.95);
+      box-shadow: 0 3px 8px rgba(80,45,27,0.1);
+      font-size: 1.05rem;
+    }
+    .color-list { display: flex; gap: 5px; flex-shrink: 0; }
+    .color-chip {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid rgba(107,58,42,0.28);
+      box-shadow: 0 2px 7px rgba(80,45,27,0.16);
+    }
+    .color-chip.is-selected {
+      border-color: var(--coffee);
+      transform: scale(1.18);
+    }
+    .memo-input {
+      flex: 1;
+      min-width: 0;
+      height: 40px;
+      border-radius: 999px;
+      padding: 0 16px;
+      background: #fff;
+      border: 1.5px solid var(--line);
+      color: var(--ink);
+      outline: none;
+      font-size: 0.92rem;
+    }
+    .memo-input::placeholder { color: rgba(118,93,77,0.62); }
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      border-radius: 14px;
+      background: var(--coffee);
+      border: 2px solid var(--coffee-dark);
+      box-shadow: 0 4px 0 #2C170E;
+      color: #FFF7D4;
+      color: var(--ink);
+      font-size: 1.2rem;
+      font-weight: 900;
+    }
+
+    /* ============ 모달 ============ */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(45, 27, 19, 0.45);
+      backdrop-filter: blur(3px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      z-index: 90;
+      width: calc(100% - 28px);
+      max-width: 400px;
+      max-height: 86vh;
+      background: var(--paper);
+      border: 1.5px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 22px 50px rgba(41, 23, 12, 0.28);
+      transform: translate(-50%, -50%) scale(0.92);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal.is-open {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 16px 18px 10px;
+      background: linear-gradient(180deg, #FFF7DF, #FFFCF3);
+      border-bottom: 1.5px dashed rgba(107,58,42,0.18);
+      gap: 10px;
+    }
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+    .modal-sub {
+      margin-top: 2px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1.5px solid var(--line);
+      box-shadow: 0 5px 12px rgba(41,23,12,0.12);
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .modal-close:active { transform: translate(2px, 2px); box-shadow: none; }
+
+    .modal-body {
+      padding: 14px 16px 18px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .meal-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+    .meal-tab {
+      flex: 1;
+      padding: 8px;
+      border-radius: 10px;
+      border: 1.5px solid var(--line);
+      background: #fff;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+    .meal-tab.is-active {
+      background: var(--accent);
+      box-shadow: 0 5px 12px rgba(41,23,12,0.12);
+    }
+
+    .meal-cat-zone {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 178px;
+      margin: 2px 0 14px;
+    }
+    .meal-cat-card {
+      width: 100%;
+      min-height: 170px;
+      display: grid;
+      grid-template-rows: auto auto;
+      place-items: center;
+      gap: 8px;
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255,224,138,0.42), transparent 36%),
+        #FFF7E2;
+      border: 1.5px solid rgba(228,208,175,0.95);
+      box-shadow: inset 0 -8px 18px rgba(107,58,42,0.06);
+    }
+    .meal-cat-face {
+      width: 140px;
+      height: 140px;
+      display: grid;
+      place-items: center;
+      border-radius: 0;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      transition: transform 0.18s ease, filter 0.18s ease;
+      overflow: visible;
+    }
+    .meal-cat-face.is-happy {
+      transform: translateY(-2px) scale(1.04);
+      filter: saturate(1.08);
+    }
+    .meal-cat-face img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .meal-cat-caption {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .menu-list {
+      list-style: none;
+      max-height: 30vh;
+      overflow-y: auto;
+      border: 1.5px dashed rgba(107,58,42,0.22);
+      border-radius: 10px;
+      padding: 6px;
+      background: rgba(255,255,255,0.76);
+    }
+    .menu-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 10px;
+      border-radius: 6px;
+      font-size: 0.93rem;
+    }
+    .menu-list li + li { border-top: 1px dashed rgba(0,0,0,0.08); }
+    .menu-list li.is-spotlight {
+      background: var(--accent);
+      font-weight: 800;
+      transform: scale(1.02);
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+    .del-btn {
+      font-size: 0.75rem;
+      color: #888;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .del-btn:hover { background: rgba(192,57,43,0.12); color: #C0392B; }
+
+    .add-row { display: flex; gap: 6px; margin-top: 10px; }
+    .add-input {
+      flex: 1; min-width: 0;
+      border: 1.5px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 0.9rem;
+      background: #fff;
+      outline: none;
+    }
+    .add-btn {
+      background: var(--coffee); color: #fff;
+      padding: 0 14px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      border: 1.5px solid var(--coffee-dark);
+      box-shadow: 0 4px 0 #2C170E;
+    }
+    .add-btn:active { transform: translate(2px, 2px); box-shadow: none; }
+
+    .spin-btn {
+      display: block; width: 100%;
+      margin-top: 14px;
+      background: linear-gradient(180deg, #7A472F, var(--coffee-dark)); color: #FFF7D4;
+      font-weight: 900; font-size: 1rem; letter-spacing: 0.22em;
+      padding: 13px;
+      border-radius: 14px;
+      border: 2px solid var(--coffee-dark);
+      box-shadow: 0 5px 0 #2C170E;
+    }
+    .spin-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--coffee); }
+    .spin-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .spin-result {
+      text-align: center;
+      margin-top: 12px; padding: 6px;
+      font-size: 0.9rem; color: #555;
+      min-height: 60px;
+    }
+    .spin-result strong {
+      display: inline-block;
+      font-size: 1.55rem; font-weight: 900;
+      color: var(--ink);
+      background: var(--accent);
+      padding: 6px 18px;
+      border-radius: 10px;
+      margin-top: 6px;
+      box-shadow: 0 4px 0 rgba(61,34,23,0.84);
+      animation: result-pop 0.4s cubic-bezier(0.36,0.07,0.19,0.97);
+    }
+    @keyframes result-pop {
+      0%   { transform: scale(0.6); opacity: 0; }
+      70%  { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    .recent {
+      margin-top: 10px;
+      padding-top: 12px;
+      border-top: 1.5px dashed rgba(0,0,0,0.15);
+    }
+    .recent-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      font-weight: 800;
+      color: #999;
+      margin-bottom: 6px;
+    }
+    .recent-list {
+      list-style: none;
+      max-height: 90px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+      color: #555;
+    }
+    .recent-list li { padding: 3px 0; }
+    .recent-list li::before { content: "✦ "; color: var(--coffee); }
+    .recent-empty { font-size: 0.78rem; color: #999; padding: 6px 0; }
+
+    .help-grid { display: grid; gap: 9px; }
+    .help-card {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 10px;
+      padding: 12px;
+      border: 1.5px solid rgba(228,208,175,0.9);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.68);
+      line-height: 1.48;
+    }
+    .help-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      background: #FFF0C2;
+      font-size: 1.35rem;
+    }
+    .help-card strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 0.92rem;
+      font-weight: 900;
+    }
+    .help-card p {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 26%;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: var(--accent);
+      padding: 10px 18px;
+      border-radius: 99px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 2px 3px 0 var(--coffee);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .toast.is-show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (min-width: 760px) {
+      .memo-page {
+        display: flex;
+        justify-content: center;
+        background: #241913;
+      }
+      .cat-stage {
+        width: 430px;
+        left: 50%;
+        transform: translateX(-50%);
+        box-shadow: 0 30px 70px rgba(0,0,0,0.48);
+      }
+      .top-bar,
+      .sticky-layer,
+      .graveyard,
+      .input-bar {
+        width: 430px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+      }
+    }
+
+    @media (max-width: 390px) {
+      .sticker-btn {
+        font-size: 0.68rem;
+        padding: 7px 4px;
+      }
+      .sticky-note {
+        width: 124px;
+        height: 104px;
+        font-size: 0.86rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="memo-page">
+    <section class="cat-stage">
+      <img id="catBg" class="cat-bg" alt="오늘의 고양이 직장인" />
+      <div id="imageError" class="image-error hidden"></div>
+
+      <header class="top-bar">
+        <div class="title-wrap">
+          <h1 class="page-title">오늘도 과부하</h1>
+          <p class="page-sub">anonymous office bamboo forest</p>
+        </div>
+
+        <div class="top-actions">
+          <button id="retestBtn" class="sticker-btn blue" type="button">다시테스트</button>
+          <button id="lunchBtn" class="sticker-btn green" type="button">점메추</button>
+          <button id="dinnerBtn" class="sticker-btn pink" type="button">저메추</button>
+          <button id="helpBtn" class="sticker-btn" type="button">HELP</button>
+        </div>
+      </header>
+
+      <div id="stickyLayer" class="sticky-layer"></div>
+
+      <section class="graveyard">
+        <div id="archiveStrip" class="archive-strip"></div>
+        <div id="tombField" class="tomb-field"></div>
+        <div class="ground"></div>
+      </section>
+
+      <footer class="input-bar">
+        <div class="sticker-row" aria-label="감정 스티커">
+          <button class="sticker-pick" data-sticker="👍" type="button" aria-label="따봉 스티커">👍</button>
+          <button class="sticker-pick" data-sticker="✌️" type="button" aria-label="브이 스티커">✌️</button>
+          <button class="sticker-pick" data-sticker="😭" type="button" aria-label="우는 스티커">😭</button>
+          <button class="sticker-pick" data-sticker="😵" type="button" aria-label="피곤함 스티커">😵</button>
+          <button class="sticker-pick" data-sticker="😡" type="button" aria-label="화남 스티커">😡</button>
+          <button class="sticker-pick" data-sticker="☕" type="button" aria-label="커피 스티커">☕</button>
+        </div>
+        <div class="input-row">
+          <div class="color-list">
+            <button class="color-chip is-selected" data-color="yellow" style="background:#FFEB8A;" type="button"></button>
+            <button class="color-chip" data-color="pink" style="background:#FFD1DC;" type="button"></button>
+            <button class="color-chip" data-color="green" style="background:#C9F0C9;" type="button"></button>
+            <button class="color-chip" data-color="blue" style="background:#C9DDF0;" type="button"></button>
+          </div>
+
+          <input id="memoInput" class="memo-input" maxlength="50" placeholder="과제 그만주세요 교수님..." autocomplete="off" />
+          <button id="sendBtn" class="send-btn" type="button">↑</button>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- ============ 모달 ============ -->
+  <div id="modalBackdrop" class="modal-backdrop"></div>
+
+  <!-- 점메추/저메추 통합 모달 -->
+  <div id="mealModal" class="modal" role="dialog" aria-hidden="true">
+    <div class="modal-head">
+      <div>
+        <h2 class="modal-title" id="mealModalTitle">점메추</h2>
+        <p class="modal-sub" id="mealModalSub">오늘 점심 뭐 먹지... 🍱</p>
+      </div>
+      <button class="modal-close" data-close-modal type="button" aria-label="닫기">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="meal-tabs">
+        <button class="meal-tab is-active" data-meal-tab="lunch" type="button">☀️ 점메추</button>
+        <button class="meal-tab" data-meal-tab="dinner" type="button">🌙 저메추</button>
+      </div>
+
+      <div class="meal-cat-zone" aria-live="polite">
+        <div class="meal-cat-card">
+          <div id="mealCatFace" class="meal-cat-face">
+            <img id="mealCatImg" src="images/icons/lunch-cat-hungry.png" alt="배고픈 점심고양이" />
+          </div>
+          <div id="mealCatCaption" class="meal-cat-caption">배고픈 고양이가 기다리는 중...</div>
+        </div>
+      </div>
+
+      <ul class="menu-list" id="menuList"></ul>
+
+      <div class="add-row">
+        <input class="add-input" id="addInput" maxlength="20"
+               placeholder="새 메뉴 추가..." autocomplete="off" />
+        <button class="add-btn" id="addBtn" type="button">+ 추가</button>
+      </div>
+
+      <button class="spin-btn" id="spinBtn" type="button">SPIN</button>
+
+      <div class="spin-result" id="spinResult">버튼을 눌러보세요</div>
+
+      <div class="recent">
+        <p class="recent-title">RECENT</p>
+        <ul class="recent-list" id="recentList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP 모달 -->
+  <div id="helpModal" class="modal" role="dialog" aria-hidden="true">
+    <div class="modal-head">
+      <div>
+        <h2 class="modal-title">오늘도 과부하 사용법</h2>
+        <p class="modal-sub">이 웹의 약속들</p>
+      </div>
+      <button class="modal-close" data-close-modal type="button" aria-label="닫기">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="help-grid">
+        <section class="help-card">
+          <span class="help-icon">☕</span>
+          <p><strong>카페인 테스트</strong>처음에는 오늘 마신 커피 잔 수를 선택합니다. 4잔 이상이면 과카페인 상태로 기록되고 메모장 하단에 작은 묘가 생깁니다.</p>
+        </section>
+        <section class="help-card">
+          <span class="help-icon">📝</span>
+          <p><strong>포스트잇 메모</strong>고양이 직장인 배경 위에 익명으로 하소연을 남길 수 있습니다. 작성 후 30일이 지나면 정리됩니다.</p>
+        </section>
+        <section class="help-card">
+          <span class="help-icon">🪦</span>
+          <p><strong>과카페인 묘</strong>묘는 실제 사망이 아니라 과부하 상태가 된 방문자를 장난스럽게 표현한 기록입니다. 월별 과카페인 숫자는 남습니다.</p>
+        </section>
+        <section class="help-card">
+          <span class="help-icon">🎡</span>
+          <p><strong>점메추 / 저메추</strong>점심과 저녁 메뉴를 함께 추가하고 삭제할 수 있습니다. 사람들이 쌓아가는 메뉴판에서 고양이가 랜덤으로 메뉴를 골라줍니다.</p>
+        </section>
+        <section class="help-card">
+          <span class="help-icon">📚</span>
+          <p><strong>기록 안내</strong>포스트잇 메모는 30일 후 삭제, 개별 묘 UI는 일정 기간 후 정리, 월별 과카페인 숫자는 보존됩니다.</p>
+        </section>
+        <section class="help-card">
+          <span class="help-icon">⚠️</span>
+          <p><strong>주의사항</strong>실명, 연락처, 학번, 회사명, 개인정보는 적지 마세요. 누군가를 공격하거나 특정인을 알아볼 수 있는 내용은 남기지 않는 것이 좋습니다.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    /* =========================
+       0. Supabase 설정
+    ========================= */
+    const SUPABASE_URL = "https://rmtkicohvedjlpomutvv.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_rolH6-HKIeF1fu2FvUk5Kg_44mPNQgu";
+
+    let supa = null;
+    let ONLINE_MODE = false;
+
+    if (
+      SUPABASE_URL &&
+      SUPABASE_ANON_KEY &&
+      SUPABASE_URL.length > 10 &&
+      window.supabase
+    ) {
+      supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      ONLINE_MODE = true;
+    }
+
+    /* =========================
+       1. 기본 설정
+    ========================= */
+    const CAT_BG_COUNT = 10;
+    const CAT_BG_PREFIX = "images/cat_bg_";
+    const CAT_BG_EXT = ".png";
+    const GRAVE_ICON = "images/icons/grave_rip.png";
+    const NOTE_MAX = 50;
+
+    function getMonthKey(date = new Date()) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      return `${y}.${m}`;
+    }
+    const CURRENT_MONTH = getMonthKey();
+
+    const STORAGE_NOTES = "overload_sticky_notes";
+    const STORAGE_STICKERS = "overload_board_stickers_v1";
+    const STORAGE_GRAVES = "overload_caffeine_graves";
+    const STORAGE_STATS = "overload_monthly_stats";
+
+    const caffeineCups = Number(localStorage.getItem("caffeine_cups") || "0");
+    const caffeineOverloaded = localStorage.getItem("caffeine_overloaded") === "true";
+
+    let caffeineSessionId = localStorage.getItem("caffeine_session_id");
+    if (!caffeineSessionId) {
+      caffeineSessionId = "session_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem("caffeine_session_id", caffeineSessionId);
+    }
+
+    let anonymousId = localStorage.getItem("overload_anon_id");
+    if (!anonymousId) {
+      anonymousId = "anon_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem("overload_anon_id", anonymousId);
+    }
+
+    let selectedColor = "yellow";
+
+    const catBg = document.getElementById("catBg");
+    const imageError = document.getElementById("imageError");
+    const stickyLayer = document.getElementById("stickyLayer");
+    const memoInput = document.getElementById("memoInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const tombField = document.getElementById("tombField");
+    const archiveStrip = document.getElementById("archiveStrip");
+
+    /* =========================
+       2. 만료 데이터 정리
+    ========================= */
+    async function cleanupExpiredData() {
+      if (ONLINE_MODE) {
+        await cleanupExpiredDataSupabase();
+      } else {
+        cleanupExpiredDataLocal();
+      }
+    }
+
+    async function cleanupExpiredDataSupabase() {
+      try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        await supa
+          .from("sticky_notes")
+          .delete()
+          .lt("created_at", thirtyDaysAgo.toISOString());
+
+        const { data: oldGraves, error } = await supa
+          .from("caffeine_graves")
+          .select("*")
+          .neq("month_key", CURRENT_MONTH);
+
+        if (error) {
+          console.warn("[cleanup] old graves load failed:", error);
+          return;
+        }
+
+        if (oldGraves && oldGraves.length > 0) {
+          const grouped = {};
+          oldGraves.forEach(grave => {
+            if (!grouped[grave.month_key]) grouped[grave.month_key] = 0;
+            grouped[grave.month_key] += 1;
+          });
+
+          for (const month in grouped) {
+            const count = grouped[month];
+            await supa
+              .from("monthly_overload_stats")
+              .upsert({
+                month_key: month,
+                overload_count: count,
+                label: `${month}: ${count} people`,
+                archived_at: new Date().toISOString()
+              }, { onConflict: "month_key" });
+          }
+
+          await supa
+            .from("caffeine_graves")
+            .delete()
+            .neq("month_key", CURRENT_MONTH);
+        }
+      } catch (err) {
+        console.warn("[cleanup] Supabase cleanup failed:", err);
+      }
+    }
+
+    function cleanupExpiredDataLocal() {
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+      const notes = getLocalArray(STORAGE_NOTES).filter(note => {
+        if (!note.created_at) return true;
+        return new Date(note.created_at).getTime() >= thirtyDaysAgo;
+      });
+
+      const graves = getLocalArray(STORAGE_GRAVES);
+      const oldGraves = graves.filter(g => g.month_key !== CURRENT_MONTH);
+      const currentGraves = graves.filter(g => g.month_key === CURRENT_MONTH);
+
+      const stats = getLocalArray(STORAGE_STATS);
+      const grouped = {};
+
+      oldGraves.forEach(grave => {
+        if (!grouped[grave.month_key]) grouped[grave.month_key] = 0;
+        grouped[grave.month_key] += 1;
+      });
+
+      Object.keys(grouped).forEach(month => {
+        const existing = stats.find(s => s.month_key === month);
+        if (existing) {
+          existing.overload_count = grouped[month];
+          existing.label = `${month}: ${grouped[month]} people`;
+          existing.archived_at = new Date().toISOString();
+        } else {
+          stats.push({
+            month_key: month,
+            overload_count: grouped[month],
+            label: `${month}: ${grouped[month]} people`,
+            archived_at: new Date().toISOString()
+          });
+        }
+      });
+
+      localStorage.setItem(STORAGE_NOTES, JSON.stringify(notes));
+      localStorage.setItem(STORAGE_GRAVES, JSON.stringify(currentGraves));
+      localStorage.setItem(STORAGE_STATS, JSON.stringify(stats));
+    }
+
+    /* =========================
+       3. 고양이 랜덤 배경
+    ========================= */
+    function loadRandomCatBackground() {
+      const num = Math.floor(Math.random() * CAT_BG_COUNT) + 1;
+      const path = CAT_BG_PREFIX + String(num).padStart(2, "0") + CAT_BG_EXT;
+
+      catBg.onerror = function () {
+        console.warn("[cat-bg] 로드 실패:", path);
+        imageError.classList.remove("hidden");
+        imageError.innerHTML =
+          "고양이 이미지가 안 보여요.<br>" +
+          "확인 경로: <strong>" + path + "</strong><br>" +
+          "파일명과 확장자(.png)를 확인해주세요.";
+      };
+
+      catBg.onload = function () {
+        imageError.classList.add("hidden");
+      };
+
+      catBg.src = path;
+    }
+
+    /* =========================
+       4. LocalStorage 보조
+    ========================= */
+    function getLocalArray(key) {
+      try {
+        return JSON.parse(localStorage.getItem(key)) || [];
+      } catch {
+        return [];
+      }
+    }
+    function setLocalArray(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    /* =========================
+       5. 포스트잇
+    ========================= */
+    function createNoteElement(note) {
+      const el = document.createElement("div");
+      el.className = "sticky-note is-" + note.color;
+      el.dataset.id = note.id;
+      el.style.left = note.x + "%";
+      el.style.top = note.y + "%";
+      el.style.transform = "rotate(" + (note.rotate || 0) + "deg)";
+
+      el.innerHTML =
+        '<span class="note-text"></span>' +
+        '<span class="note-meta">익명 직장인</span>';
+
+      el.querySelector(".note-text").textContent = note.text;
+      enableDrag(el);
+      return el;
+    }
+
+    async function loadNotes() {
+      stickyLayer.innerHTML = "";
+
+      if (ONLINE_MODE) {
+        const { data, error } = await supa
+          .from("sticky_notes")
+          .select("*")
+          .eq("month_key", CURRENT_MONTH)
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          console.warn("[notes] load failed:", error);
+          return;
+        }
+        data.forEach(note => stickyLayer.appendChild(createNoteElement(note)));
+      } else {
+        const notes = getLocalArray(STORAGE_NOTES).filter(n => n.month_key === CURRENT_MONTH);
+        notes.forEach(note => stickyLayer.appendChild(createNoteElement(note)));
+      }
+    }
+
+    async function addNote() {
+      const text = memoInput.value.trim();
+      if (!text) return;
+      if (text.length > NOTE_MAX) return;
+
+      const note = {
+        id: "note_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        text,
+        color: selectedColor,
+        x: 8 + Math.random() * 58,
+        y: 18 + Math.random() * 45,
+        rotate: Math.floor(Math.random() * 12) - 6,
+        month_key: CURRENT_MONTH,
+        created_at: new Date().toISOString(),
+        session_id: caffeineSessionId,
+        anonymous_id: anonymousId
+      };
+
+      memoInput.value = "";
+
+      if (ONLINE_MODE) {
+        const { data, error } = await supa
+          .from("sticky_notes")
+          .insert({
+            text: note.text,
+            color: note.color,
+            x: note.x,
+            y: note.y,
+            month_key: note.month_key,
+            anonymous_id: note.anonymous_id
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.warn("[notes] insert failed:", error);
+          return;
+        }
+        stickyLayer.appendChild(createNoteElement(data));
+      } else {
+        const notes = getLocalArray(STORAGE_NOTES);
+        notes.push(note);
+        setLocalArray(STORAGE_NOTES, notes);
+        stickyLayer.appendChild(createNoteElement(note));
+      }
+    }
+
+    async function updateNotePosition(id, x, y) {
+      if (ONLINE_MODE) {
+        await supa.from("sticky_notes").update({ x, y }).eq("id", id);
+      } else {
+        const notes = getLocalArray(STORAGE_NOTES);
+        const note = notes.find(n => n.id === id);
+        if (note) {
+          note.x = x;
+          note.y = y;
+          setLocalArray(STORAGE_NOTES, notes);
+        }
+      }
+    }
+
+    function createStickerElement(sticker) {
+      const el = document.createElement("div");
+      el.className = "board-sticker";
+      el.dataset.id = sticker.id;
+      el.textContent = sticker.emoji;
+      el.style.left = sticker.x + "%";
+      el.style.top = sticker.y + "%";
+      el.style.transform = "rotate(" + (sticker.rotate || 0) + "deg)";
+      enableStickerDrag(el);
+      return el;
+    }
+
+    function loadStickers() {
+      const stickers = getLocalArray(STORAGE_STICKERS).filter(s => s.month_key === CURRENT_MONTH);
+      stickers.forEach(sticker => stickyLayer.appendChild(createStickerElement(sticker)));
+    }
+
+    function addSticker(emoji) {
+      const sticker = {
+        id: "sticker_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        emoji,
+        x: 10 + Math.random() * 72,
+        y: 22 + Math.random() * 42,
+        rotate: Math.floor(Math.random() * 12) - 6,
+        month_key: CURRENT_MONTH,
+        created_at: new Date().toISOString()
+      };
+      const stickers = getLocalArray(STORAGE_STICKERS);
+      stickers.push(sticker);
+      setLocalArray(STORAGE_STICKERS, stickers);
+      stickyLayer.appendChild(createStickerElement(sticker));
+    }
+
+    function updateStickerPosition(id, x, y) {
+      const stickers = getLocalArray(STORAGE_STICKERS);
+      const sticker = stickers.find(s => s.id === id);
+      if (sticker) {
+        sticker.x = x;
+        sticker.y = y;
+        setLocalArray(STORAGE_STICKERS, stickers);
+      }
+    }
+
+    function enableDrag(el) {
+      let startX = 0, startY = 0, startLeft = 0, startTop = 0, isDragging = false;
+
+      function pointerDown(e) {
+        const point = e.touches ? e.touches[0] : e;
+        isDragging = true;
+        el.classList.add("is-dragging");
+
+        startX = point.clientX;
+        startY = point.clientY;
+
+        const parentRect = stickyLayer.getBoundingClientRect();
+        const rect = el.getBoundingClientRect();
+        startLeft = rect.left - parentRect.left;
+        startTop = rect.top - parentRect.top;
+
+        document.addEventListener("mousemove", pointerMove);
+        document.addEventListener("mouseup", pointerUp);
+        document.addEventListener("touchmove", pointerMove, { passive: false });
+        document.addEventListener("touchend", pointerUp);
+
+        if (e.cancelable) e.preventDefault();
+      }
+
+      function pointerMove(e) {
+        if (!isDragging) return;
+        const point = e.touches ? e.touches[0] : e;
+        const parentRect = stickyLayer.getBoundingClientRect();
+
+        let newLeft = startLeft + point.clientX - startX;
+        let newTop = startTop + point.clientY - startY;
+
+        const maxLeft = parentRect.width - el.offsetWidth;
+        const maxTop = parentRect.height - el.offsetHeight - 120;
+
+        newLeft = Math.max(0, Math.min(maxLeft, newLeft));
+        newTop = Math.max(70, Math.min(maxTop, newTop));
+
+        el.style.left = newLeft + "px";
+        el.style.top = newTop + "px";
+
+        if (e.cancelable) e.preventDefault();
+      }
+
+      async function pointerUp() {
+        if (!isDragging) return;
+        isDragging = false;
+        el.classList.remove("is-dragging");
+
+        const parentRect = stickyLayer.getBoundingClientRect();
+        const x = (parseFloat(el.style.left) / parentRect.width) * 100;
+        const y = (parseFloat(el.style.top) / parentRect.height) * 100;
+
+        el.style.left = x + "%";
+        el.style.top = y + "%";
+
+        await updateNotePosition(el.dataset.id, x, y);
+
+        document.removeEventListener("mousemove", pointerMove);
+        document.removeEventListener("mouseup", pointerUp);
+        document.removeEventListener("touchmove", pointerMove);
+        document.removeEventListener("touchend", pointerUp);
+      }
+
+      el.addEventListener("mousedown", pointerDown);
+      el.addEventListener("touchstart", pointerDown, { passive: false });
+    }
+
+    function enableStickerDrag(el) {
+      let startX = 0, startY = 0, startLeft = 0, startTop = 0, isDragging = false;
+
+      function pointerDown(e) {
+        const point = e.touches ? e.touches[0] : e;
+        isDragging = true;
+        el.classList.add("is-dragging");
+        startX = point.clientX;
+        startY = point.clientY;
+
+        const parentRect = stickyLayer.getBoundingClientRect();
+        const rect = el.getBoundingClientRect();
+        startLeft = rect.left - parentRect.left;
+        startTop = rect.top - parentRect.top;
+
+        document.addEventListener("mousemove", pointerMove);
+        document.addEventListener("mouseup", pointerUp);
+        document.addEventListener("touchmove", pointerMove, { passive: false });
+        document.addEventListener("touchend", pointerUp);
+
+        if (e.cancelable) e.preventDefault();
+      }
+
+      function pointerMove(e) {
+        if (!isDragging) return;
+        const point = e.touches ? e.touches[0] : e;
+        const parentRect = stickyLayer.getBoundingClientRect();
+
+        let newLeft = startLeft + point.clientX - startX;
+        let newTop = startTop + point.clientY - startY;
+
+        const maxLeft = parentRect.width - el.offsetWidth;
+        const maxTop = parentRect.height - el.offsetHeight - 120;
+
+        newLeft = Math.max(0, Math.min(maxLeft, newLeft));
+        newTop = Math.max(86, Math.min(maxTop, newTop));
+
+        el.style.left = newLeft + "px";
+        el.style.top = newTop + "px";
+
+        if (e.cancelable) e.preventDefault();
+      }
+
+      function pointerUp() {
+        if (!isDragging) return;
+        isDragging = false;
+        el.classList.remove("is-dragging");
+
+        const parentRect = stickyLayer.getBoundingClientRect();
+        const x = (parseFloat(el.style.left) / parentRect.width) * 100;
+        const y = (parseFloat(el.style.top) / parentRect.height) * 100;
+
+        el.style.left = x + "%";
+        el.style.top = y + "%";
+        updateStickerPosition(el.dataset.id, x, y);
+
+        document.removeEventListener("mousemove", pointerMove);
+        document.removeEventListener("mouseup", pointerUp);
+        document.removeEventListener("touchmove", pointerMove);
+        document.removeEventListener("touchend", pointerUp);
+      }
+
+      el.addEventListener("mousedown", pointerDown);
+      el.addEventListener("touchstart", pointerDown, { passive: false });
+    }
+
+    /* =========================
+       6. 과카페인 묘
+    ========================= */
+    function createGraveElement(grave) {
+      const el = document.createElement("div");
+      el.className = "grave-item";
+      el.dataset.id = grave.id;
+      el.style.left = grave.x + "%";
+      el.style.transform = "rotate(" + (grave.rotate || 0) + "deg)";
+      el.title = `${grave.caffeine_count}잔 마신 과카페인 직장인`;
+
+      const img = document.createElement("img");
+      img.src = GRAVE_ICON;
+      img.alt = "과카페인 묘";
+
+      img.onerror = function () {
+        el.innerHTML = '<div class="grave-fallback">RIP<br>' + grave.caffeine_count + '</div>';
+      };
+
+      el.appendChild(img);
+      return el;
+    }
+
+    async function loadGraves() {
+      tombField.innerHTML = "";
+
+      if (ONLINE_MODE) {
+        const { data, error } = await supa
+          .from("caffeine_graves")
+          .select("*")
+          .eq("month_key", CURRENT_MONTH)
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          console.warn("[graves] load failed:", error);
+          return;
+        }
+        data.forEach(grave => tombField.appendChild(createGraveElement(grave)));
+      } else {
+        const graves = getLocalArray(STORAGE_GRAVES).filter(g => g.month_key === CURRENT_MONTH);
+        graves.forEach(grave => tombField.appendChild(createGraveElement(grave)));
+      }
+    }
+
+    async function ensureOverloadGraveFromLoading() {
+      if (!caffeineOverloaded) return;
+
+      const localCreatedKey = "grave_created_for_" + caffeineSessionId;
+      if (localStorage.getItem(localCreatedKey) === "true") return;
+
+      const grave = {
+        id: "grave_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        caffeine_count: caffeineCups || 4,
+        x: 6 + Math.random() * 88,
+        rotate: Math.floor(Math.random() * 10) - 5,
+        month_key: CURRENT_MONTH,
+        created_at: new Date().toISOString(),
+        session_id: caffeineSessionId,
+        anonymous_id: anonymousId
+      };
+
+      if (ONLINE_MODE) {
+        const { data: existing } = await supa
+          .from("caffeine_graves")
+          .select("id")
+          .eq("session_id", caffeineSessionId)
+          .maybeSingle();
+
+        if (existing) {
+          localStorage.setItem(localCreatedKey, "true");
+          return;
+        }
+
+        const { data, error } = await supa
+          .from("caffeine_graves")
+          .insert({
+            caffeine_count: grave.caffeine_count,
+            x: grave.x,
+            month_key: grave.month_key,
+            session_id: grave.session_id,
+            anonymous_id: grave.anonymous_id
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.warn("[graves] insert failed:", error);
+          return;
+        }
+        tombField.appendChild(createGraveElement(data));
+      } else {
+        const graves = getLocalArray(STORAGE_GRAVES);
+
+        if (!graves.some(g => g.session_id === caffeineSessionId)) {
+          graves.push(grave);
+          setLocalArray(STORAGE_GRAVES, graves);
+          tombField.appendChild(createGraveElement(grave));
+        }
+      }
+
+      localStorage.setItem(localCreatedKey, "true");
+    }
+
+    /* =========================
+       7. 월별 과카페인 숫자
+    ========================= */
+    async function loadArchiveStats() {
+      if (ONLINE_MODE) {
+        const { data } = await supa
+          .from("monthly_overload_stats")
+          .select("*")
+          .order("month_key", { ascending: false })
+          .limit(3);
+
+        if (data && data.length > 0) {
+          archiveStrip.textContent = data.map(s => s.label).join(" · ");
+        }
+      } else {
+        const stats = getLocalArray(STORAGE_STATS).slice(-3).reverse();
+        if (stats.length > 0) {
+          archiveStrip.textContent = stats.map(s => s.label).join(" · ");
+        }
+      }
+    }
+
+    /* =========================
+       8. 실시간 구독 (포스트잇/묘)
+    ========================= */
+    function subscribeRealtime() {
+      if (!ONLINE_MODE) return;
+
+      supa.channel("sticky_notes_realtime")
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "sticky_notes"
+        }, payload => {
+          const note = payload.new;
+          if (note.month_key !== CURRENT_MONTH) return;
+          if (stickyLayer.querySelector('[data-id="' + note.id + '"]')) return;
+          stickyLayer.appendChild(createNoteElement(note));
+        })
+        .on("postgres_changes", {
+          event: "UPDATE",
+          schema: "public",
+          table: "sticky_notes"
+        }, payload => {
+          const note = payload.new;
+          if (note.month_key !== CURRENT_MONTH) return;
+          const el = stickyLayer.querySelector('[data-id="' + note.id + '"]');
+          if (!el || el.classList.contains("is-dragging")) return;
+          el.style.left = note.x + "%";
+          el.style.top = note.y + "%";
+        })
+        .subscribe();
+
+      supa.channel("caffeine_graves_realtime")
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "caffeine_graves"
+        }, payload => {
+          const grave = payload.new;
+          if (grave.month_key !== CURRENT_MONTH) return;
+          if (tombField.querySelector('[data-id="' + grave.id + '"]')) return;
+          tombField.appendChild(createGraveElement(grave));
+        })
+        .subscribe();
+    }
+
+    /* =========================
+       9. 상단 버튼 / 입력창 바인딩
+    ========================= */
+    document.querySelectorAll(".color-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll(".color-chip").forEach(c => c.classList.remove("is-selected"));
+        chip.classList.add("is-selected");
+        selectedColor = chip.dataset.color;
+      });
+    });
+
+    document.querySelectorAll(".sticker-pick").forEach(btn => {
+      btn.addEventListener("click", () => addSticker(btn.dataset.sticker));
+    });
+
+    sendBtn.addEventListener("click", addNote);
+
+    memoInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addNote();
+      }
+    });
+
+    document.getElementById("retestBtn").addEventListener("click", () => {
+      window.location.href = "loading-test.html";
+    });
+
+    /* =========================
+       10. 모달 컨트롤
+    ========================= */
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const mealModal = document.getElementById("mealModal");
+    const helpModal = document.getElementById("helpModal");
+    const mealModalTitle = document.getElementById("mealModalTitle");
+    const mealModalSub = document.getElementById("mealModalSub");
+    const mealCatFace = document.getElementById("mealCatFace");
+    const mealCatImg = document.getElementById("mealCatImg");
+    const mealCatCaption = document.getElementById("mealCatCaption");
+
+    let activeModal = null;
+    let mealLoaded = false;
+
+    function openModal(name) {
+      closeAnyModal();
+
+      if (name === "lunch" || name === "dinner") {
+        mealMode = name;
+        mealModalTitle.textContent = (name === "lunch") ? "점메추" : "저메추";
+        mealModalSub.textContent = (name === "lunch")
+          ? "오늘 점심 뭐 먹지... 🍱"
+          : "오늘 저녁 뭐 먹지... 🌙";
+        setMealCatState(false);
+        document.querySelectorAll(".meal-tab").forEach(t => {
+          t.classList.toggle("is-active", t.dataset.mealTab === name);
+        });
+        document.getElementById("spinResult").textContent = "버튼을 눌러보세요";
+
+        mealModal.classList.add("is-open");
+        activeModal = "meal";
+
+        if (!mealLoaded) {
+          mealLoaded = true;
+          loadMenus().then(() => {
+            renderMenus();
+            renderRecent();
+          });
+          subscribeMealRealtime();
+        } else {
+          renderMenus();
+          renderRecent();
+        }
+      } else if (name === "help") {
+        helpModal.classList.add("is-open");
+        activeModal = "help";
+      }
+
+      modalBackdrop.classList.add("is-open");
+    }
+
+    function closeAnyModal() {
+      mealModal.classList.remove("is-open");
+      helpModal.classList.remove("is-open");
+      modalBackdrop.classList.remove("is-open");
+      activeModal = null;
+    }
+
+    modalBackdrop.addEventListener("click", closeAnyModal);
+    document.querySelectorAll("[data-close-modal]").forEach(btn => {
+      btn.addEventListener("click", closeAnyModal);
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && activeModal) closeAnyModal();
+    });
+
+    document.getElementById("lunchBtn").addEventListener("click", () => openModal("lunch"));
+    document.getElementById("dinnerBtn").addEventListener("click", () => openModal("dinner"));
+    document.getElementById("helpBtn").addEventListener("click", () => openModal("help"));
+
+    /* =========================
+       11. 점메추 / 저메추
+    ========================= */
+    const INITIAL_LUNCH = ["김치찌개", "돈까스", "제육볶음", "마라탕", "국밥", "샐러드 먹는 척", "그냥 커피 한 잔 더"];
+    const INITIAL_DINNER = ["치킨", "라면", "떡볶이", "편의점 삼각김밥", "덮밥", "오늘은 굶기", "집 가서 아무거나"];
+
+    const STORAGE_MEAL_MENUS = "overload_meal_menus_v1";
+    const STORAGE_MEAL_LOGS = "overload_meal_logs_v1";
+
+    let mealMode = "lunch";
+    let menus = { lunch: [], dinner: [] };
+    let recent = [];
+
+    const MEAL_CAT = {
+      lunch: {
+        hungry: "images/icons/lunch-cat-hungry.png",
+        happy: "images/icons/lunch-cat-happy.png",
+        hungryAlt: "배고픈 점심고양이",
+        happyAlt: "행복한 점심고양이",
+        label: "점심고양이가 배고파요"
+      },
+      dinner: {
+        hungry: "images/icons/dinner-cat-hungry.png",
+        happy: "images/icons/dinner-cat-happy.png",
+        hungryAlt: "배고픈 저녁고양이",
+        happyAlt: "행복한 저녁고양이",
+        label: "저녁고양이가 퇴근을 기다려요"
+      }
+    };
+
+    function setMealCatState(isHappy, menu) {
+      const cat = MEAL_CAT[mealMode] || MEAL_CAT.lunch;
+      mealCatImg.src = isHappy ? cat.happy : cat.hungry;
+      mealCatImg.alt = isHappy ? cat.happyAlt : cat.hungryAlt;
+      mealCatFace.classList.toggle("is-happy", isHappy);
+      mealCatCaption.textContent = isHappy && menu
+        ? menu + " 좋다냥!"
+        : cat.label;
+    }
+
+    function getDefaultMenus(type) {
+      const arr = (type === "lunch" ? INITIAL_LUNCH : INITIAL_DINNER);
+      return arr.map(menu => ({ menu, isDefault: true }));
+    }
+
+    function getLocalMealMenus() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_MEAL_MENUS)) || {}; }
+      catch { return {}; }
+    }
+    function saveLocalMealMenus(d) {
+      localStorage.setItem(STORAGE_MEAL_MENUS, JSON.stringify(d));
+    }
+    function getLocalMealLogs() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_MEAL_LOGS)) || []; }
+      catch { return []; }
+    }
+    function saveLocalMealLogs(l) {
+      localStorage.setItem(STORAGE_MEAL_LOGS, JSON.stringify(l));
+    }
+
+    function showToast(msg, duration) {
+      duration = duration || 1500;
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("is-show");
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove("is-show"), duration);
+    }
+
+    async function loadMenus() {
+      menus.lunch = getDefaultMenus("lunch");
+      menus.dinner = getDefaultMenus("dinner");
+      recent = [];
+
+      if (ONLINE_MODE) {
+        try {
+          const { data } = await supa.from("meal_menus")
+            .select("*").order("created_at", { ascending: true });
+          (data || []).forEach(m => {
+            if (!menus[m.type]) return;
+            if (!menus[m.type].some(x => x.menu === m.menu)) {
+              menus[m.type].push({ menu: m.menu, isDefault: false, id: m.id });
+            }
+          });
+
+          const { data: logData } = await supa.from("meal_logs")
+            .select("*").order("created_at", { ascending: false }).limit(10);
+          if (logData) recent = logData.map(l => ({ type: l.type, menu: l.selected_menu }));
+        } catch (err) {
+          console.warn("[meal] load failed:", err);
+        }
+      } else {
+        const local = getLocalMealMenus();
+        ["lunch", "dinner"].forEach(t => {
+          (local[t] || []).forEach(menuName => {
+            if (!menus[t].some(x => x.menu === menuName)) {
+              menus[t].push({ menu: menuName, isDefault: false });
+            }
+          });
+        });
+        recent = getLocalMealLogs();
+      }
+    }
+
+    function renderMenus() {
+      const ul = document.getElementById("menuList");
+      ul.innerHTML = "";
+      menus[mealMode].forEach((m, i) => {
+        const li = document.createElement("li");
+        li.dataset.index = i;
+        const span = document.createElement("span");
+        span.textContent = m.menu;
+        li.appendChild(span);
+        if (!m.isDefault) {
+          const del = document.createElement("button");
+          del.className = "del-btn";
+          del.textContent = "삭제";
+          del.type = "button";
+          del.onclick = () => deleteMenu(m);
+          li.appendChild(del);
+        }
+        ul.appendChild(li);
+      });
+    }
+
+    function renderRecent() {
+      const ul = document.getElementById("recentList");
+      ul.innerHTML = "";
+      if (recent.length === 0) {
+        const li = document.createElement("li");
+        li.className = "recent-empty";
+        li.textContent = "아직 SPIN 기록이 없어요.";
+        ul.appendChild(li);
+        return;
+      }
+      recent.slice(0, 8).forEach(r => {
+        const li = document.createElement("li");
+        const tag = r.type === "lunch" ? "점" : "저";
+        li.textContent = "[" + tag + "] " + r.menu;
+        ul.appendChild(li);
+      });
+    }
+
+    async function addMenu() {
+      const input = document.getElementById("addInput");
+      const text = input.value.trim();
+      if (!text) return;
+      if (text.length > 20) { showToast("20자 이내로 입력해주세요"); return; }
+      if (menus[mealMode].some(m => m.menu === text)) {
+        showToast("이미 있는 메뉴입니다");
+        return;
+      }
+
+      const item = { menu: text, isDefault: false };
+      menus[mealMode].push(item);
+      renderMenus();
+      input.value = "";
+
+      if (ONLINE_MODE) {
+        try {
+          const { data, error } = await supa.from("meal_menus").insert({
+            type: mealMode, menu: text, anonymous_id: anonymousId
+          }).select().single();
+          if (error) throw error;
+          if (data) item.id = data.id;
+        } catch (err) {
+          console.warn("[meal] add failed:", err);
+        }
+      } else {
+        const local = getLocalMealMenus();
+        if (!local[mealMode]) local[mealMode] = [];
+        local[mealMode].push(text);
+        saveLocalMealMenus(local);
+      }
+    }
+
+    async function deleteMenu(item) {
+      const arr = menus[mealMode];
+      const idx = arr.indexOf(item);
+      if (idx > -1) {
+        arr.splice(idx, 1);
+        renderMenus();
+      }
+      if (ONLINE_MODE && item.id) {
+        try { await supa.from("meal_menus").delete().eq("id", item.id); }
+        catch (err) { console.warn("[meal] delete failed:", err); }
+      } else if (!ONLINE_MODE) {
+        const local = getLocalMealMenus();
+        if (local[mealMode]) {
+          local[mealMode] = local[mealMode].filter(m => m !== item.menu);
+          saveLocalMealMenus(local);
+        }
+      }
+    }
+
+    function spin() {
+      const arr = menus[mealMode];
+      if (arr.length === 0) { showToast("메뉴가 없습니다"); return; }
+
+      const spinBtn = document.getElementById("spinBtn");
+      const result = document.getElementById("spinResult");
+      spinBtn.disabled = true;
+      result.textContent = "고양이가 메뉴판을 뒤적이는 중...";
+      setMealCatState(false);
+
+      const total = 20 + Math.floor(Math.random() * 8);
+      let count = 0, prev = -1;
+
+      const tick = () => {
+        document.querySelectorAll(".menu-list li").forEach(li => li.classList.remove("is-spotlight"));
+        let idx;
+        do { idx = Math.floor(Math.random() * arr.length); }
+        while (idx === prev && arr.length > 1);
+        prev = idx;
+
+        const li = document.querySelector('.menu-list li[data-index="' + idx + '"]');
+        if (li) {
+          li.classList.add("is-spotlight");
+          li.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+
+        count++;
+        if (count < total) {
+          const delay = 50 + count * (200 / total);
+          setTimeout(tick, delay);
+        } else {
+          const chosen = arr[idx];
+          result.innerHTML = '오늘은<br/><strong>' + chosen.menu + '</strong>';
+          setMealCatState(true, chosen.menu);
+          spinBtn.disabled = false;
+
+          recent.unshift({ type: mealMode, menu: chosen.menu });
+          if (recent.length > 10) recent.pop();
+          renderRecent();
+
+          if (ONLINE_MODE) {
+            supa.from("meal_logs").insert({
+              type: mealMode, selected_menu: chosen.menu, anonymous_id: anonymousId
+            }).then(({ error }) => {
+              if (error) console.warn("[meal] log failed:", error);
+            });
+          } else {
+            saveLocalMealLogs(recent);
+          }
+        }
+      };
+      tick();
+    }
+
+    function subscribeMealRealtime() {
+      if (!ONLINE_MODE) return;
+
+      supa.channel("meal_menus_realtime")
+        .on("postgres_changes",
+          { event: "INSERT", schema: "public", table: "meal_menus" },
+          payload => {
+            const m = payload.new;
+            if (m.anonymous_id === anonymousId) return;
+            if (!menus[m.type]) return;
+            if (!menus[m.type].some(x => x.menu === m.menu)) {
+              menus[m.type].push({ menu: m.menu, isDefault: false, id: m.id });
+              if (mealMode === m.type && mealModal.classList.contains("is-open")) renderMenus();
+            }
+          })
+        .on("postgres_changes",
+          { event: "DELETE", schema: "public", table: "meal_menus" },
+          payload => {
+            const oldM = payload.old;
+            Object.keys(menus).forEach(t => {
+              const idx = menus[t].findIndex(x => x.id === oldM.id);
+              if (idx > -1) menus[t].splice(idx, 1);
+            });
+            if (mealModal.classList.contains("is-open")) renderMenus();
+          })
+        .subscribe();
+
+      supa.channel("meal_logs_realtime")
+        .on("postgres_changes",
+          { event: "INSERT", schema: "public", table: "meal_logs" },
+          payload => {
+            const l = payload.new;
+            if (l.anonymous_id === anonymousId) return;
+            recent.unshift({ type: l.type, menu: l.selected_menu });
+            if (recent.length > 10) recent.pop();
+            if (mealModal.classList.contains("is-open")) renderRecent();
+          })
+        .subscribe();
+    }
+
+    document.getElementById("addBtn").addEventListener("click", addMenu);
+    document.getElementById("addInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); addMenu(); }
+    });
+    document.getElementById("spinBtn").addEventListener("click", spin);
+
+    document.querySelectorAll(".meal-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        mealMode = tab.dataset.mealTab;
+        document.querySelectorAll(".meal-tab").forEach(t => {
+          t.classList.toggle("is-active", t === tab);
+        });
+        mealModalTitle.textContent = (mealMode === "lunch") ? "점메추" : "저메추";
+        mealModalSub.textContent = (mealMode === "lunch")
+          ? "오늘 점심 뭐 먹지... 🍱"
+          : "오늘 저녁 뭐 먹지... 🌙";
+        setMealCatState(false);
+        document.getElementById("spinResult").textContent = "버튼을 눌러보세요";
+        renderMenus();
+      });
+    });
+
+    /* =========================
+       12. 초기 실행
+    ========================= */
+    async function initMemoBoard() {
+      loadRandomCatBackground();
+      await cleanupExpiredData();
+      await loadNotes();
+      loadStickers();
+      await loadGraves();
+      await ensureOverloadGraveFromLoading();
+      await loadArchiveStats();
+      subscribeRealtime();
+    }
+
+    initMemoBoard();
+  </script>
+</body>
+</html>

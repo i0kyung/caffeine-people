@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#F0ECEB" />
+  <title>오늘도 과부하 | Cafe Utils</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@kfonts/line-seed-sans-kr/index.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg:            #F5F4F5;
+      --paper:         #FFFCF3;
+      --line:          #E4D0AF;
+      --ink:           #2B1B13;
+      --ink-soft:      #765D4D;
+      --ink-mute:      #A28A76;
+      --accent:        #FFE08A;
+      --coffee:        #6B3A2A;
+      --coffee-dark:   #3B2117;
+      --red:           #C0392B;
+      --postit-yellow: #FFEB8A;
+      --postit-pink:   #FFD1DC;
+      --postit-green:  #C9F0C9;
+      --postit-blue:   #C9DDF0;
+
+      --font-kr: "LINE Seed Sans KR", -apple-system, BlinkMacSystemFont,
+                 "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background:
+        linear-gradient(rgba(43,27,19,0.42), rgba(43,27,19,0.42)),
+        radial-gradient(circle at 50% 22%, rgba(255,255,255,0.55), transparent 34%),
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--font-kr);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: max(16px, env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));
+      position: relative;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: url("images/cat_bg_01.png") center / cover no-repeat;
+      filter: blur(5px);
+      transform: scale(1.03);
+      opacity: 0.62;
+      z-index: -2;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: rgba(43, 27, 19, 0.42);
+      z-index: -1;
+    }
+
+    button, input {
+      font-family: inherit;
+      color: inherit;
+      border: none;
+      background: none;
+    }
+    button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
+    .hidden { display: none !important; }
+
+    .page {
+      width: min(100%, 430px);
+      max-height: calc(100vh - 28px);
+      overflow-y: auto;
+      padding: 16px;
+      border-radius: 26px;
+      background: rgba(255,252,243,0.94);
+      border: 1.5px solid rgba(228,208,175,0.95);
+      box-shadow: 0 24px 58px rgba(41,23,12,0.28);
+      position: relative;
+    }
+
+    /* ── 헤더 ── */
+    .page-header {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .page-sub {
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+      letter-spacing: -0.01em;
+    }
+
+    /* ── 카드 ── */
+    .card {
+      background: var(--paper);
+      border: 1.5px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 12px 30px rgba(41,23,12,0.1);
+      margin-bottom: 16px;
+    }
+
+    /* ── 메뉴 리스트 ── */
+    .menu-list {
+      list-style: none;
+      max-height: 28vh;
+      overflow-y: auto;
+      border: 1.5px dashed rgba(107,58,42,0.2);
+      border-radius: 10px;
+      padding: 6px;
+      background: #fff;
+    }
+    .menu-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 10px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      transition: background 0.08s, transform 0.06s;
+    }
+    .menu-list li + li {
+      border-top: 1px dashed rgba(0,0,0,0.08);
+    }
+    .menu-list li.is-spotlight {
+      background: var(--accent);
+      font-weight: 800;
+      transform: scale(1.02);
+      border-radius: 8px;
+      box-shadow: 0 4px 0 rgba(59,33,23,0.7);
+    }
+    .menu-list .del-btn {
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .menu-list .del-btn:hover {
+      background: rgba(192,57,43,0.12);
+      color: var(--red);
+    }
+
+    /* ── 메뉴 추가 ── */
+    .add-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .add-input {
+      flex: 1;
+      border: 1.5px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 0.92rem;
+      background: #fff;
+      outline: none;
+      min-width: 0;
+    }
+    .add-input:focus { border-color: var(--coffee); }
+    .add-btn {
+      background: var(--coffee);
+      color: #fff;
+      padding: 0 14px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.88rem;
+      border: 1.5px solid var(--coffee-dark);
+      box-shadow: 0 4px 0 #2C170E;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .add-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: none;
+    }
+
+    /* ── SPIN 버튼 ── */
+    .spin-btn {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      background: linear-gradient(180deg, #7A472F, var(--coffee-dark));
+      color: #FFF7D4;
+      font-weight: 900;
+      font-size: 1rem;
+      letter-spacing: 0.22em;
+      padding: 14px;
+      border-radius: 14px;
+      border: 0;
+      box-shadow: 0 5px 0 #2C170E;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .spin-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0 2px 0 #2C170E;
+    }
+    .spin-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    /* ── 결과 ── */
+    .result {
+      text-align: center;
+      margin-top: 14px;
+      padding: 10px;
+      font-size: 0.92rem;
+      color: var(--ink-soft);
+      min-height: 70px;
+    }
+    .result strong {
+      display: inline-block;
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: var(--ink);
+      background: var(--accent);
+      padding: 6px 18px;
+      border-radius: 10px;
+      margin-top: 8px;
+      letter-spacing: -0.02em;
+      box-shadow: 0 4px 0 rgba(59,33,23,0.7);
+      animation: result-pop 0.4s cubic-bezier(0.36,0.07,0.19,0.97);
+    }
+    @keyframes result-pop {
+      0%   { transform: scale(0.6); opacity: 0; }
+      70%  { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    /* ── 최근 기록 ── */
+    .recent {
+      margin-top: 10px;
+      padding-top: 12px;
+      border-top: 1.5px dashed rgba(0,0,0,0.15);
+    }
+    .recent-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      font-weight: 800;
+      color: var(--ink-mute);
+      margin-bottom: 6px;
+    }
+    .recent-list {
+      list-style: none;
+      max-height: 96px;
+      overflow-y: auto;
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+    }
+    .recent-list li { padding: 4px 0; }
+    .recent-list li::before {
+      content: "✦ ";
+      color: var(--coffee);
+    }
+    .recent-empty {
+      font-size: 0.78rem;
+      color: var(--ink-mute);
+      padding: 6px 0;
+    }
+
+    /* ── 하단 네비 ── */
+    .nav-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      letter-spacing: -0.01em;
+      background: var(--accent);
+      color: var(--ink);
+      box-shadow: 0 4px 0 rgba(59,33,23,0.7);
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: none;
+    }
+    .btn.blue  { background: var(--postit-blue); }
+    .btn.pink  { background: var(--postit-pink); }
+    .btn.green { background: var(--postit-green); }
+
+    .cat-recommend {
+      display: grid;
+      place-items: center;
+      gap: 10px;
+      min-height: 174px;
+      margin-bottom: 14px;
+      border-radius: 22px;
+      border: 1.5px solid rgba(228,208,175,0.95);
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255,224,138,0.44), transparent 36%),
+        #FFF7E2;
+      box-shadow: inset 0 -8px 18px rgba(107,58,42,0.06);
+    }
+    .cat-face {
+      width: 102px;
+      height: 102px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid rgba(228,208,175,0.9);
+      box-shadow: 0 12px 24px rgba(70,38,20,0.13);
+      overflow: hidden;
+      font-size: 3.25rem;
+      transition: transform 0.18s ease, filter 0.18s ease;
+    }
+    .cat-face.is-happy {
+      transform: translateY(-2px) scale(1.04);
+      filter: saturate(1.08);
+    }
+    .cat-face img {
+      width: 92px;
+      height: 92px;
+      object-fit: contain;
+    }
+    .cat-face .cat-emoji { display: none; }
+    .cat-face.is-fallback img { display: none; }
+    .cat-face.is-fallback .cat-emoji { display: block; }
+    .cat-caption {
+      font-size: 0.84rem;
+      font-weight: 800;
+      color: var(--ink-soft);
+    }
+
+    /* ── HELP 섹션 ── */
+    .help-list {
+      list-style: none;
+      padding: 0;
+    }
+    .help-list li {
+      padding: 11px 14px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: rgba(255, 235, 138, 0.38);
+      font-size: 0.93rem;
+      line-height: 1.55;
+      letter-spacing: -0.01em;
+    }
+    .help-list li::before {
+      content: "📌 ";
+      margin-right: 2px;
+    }
+
+    /* ── 토스트 ── */
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: var(--accent);
+      padding: 10px 18px;
+      border-radius: 99px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 2px 3px 0 var(--coffee);
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .toast.is-show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="page-header">
+      <h1 class="page-title" id="pageTitle">...</h1>
+      <p class="page-sub" id="pageSub">...</p>
+    </header>
+
+    <!-- ─────────────── ROULETTE (lunch/dinner) ─────────────── -->
+    <section id="recommendSection" class="hidden">
+      <div class="card">
+        <div class="cat-recommend" aria-live="polite">
+          <div id="catFace" class="cat-face">
+            <img id="catFaceImg" src="images/hungry-cat.png" alt="배고픈 추천 고양이" />
+            <span id="catEmoji" class="cat-emoji">😿</span>
+          </div>
+          <p id="catCaption" class="cat-caption">배고픈 고양이가 메뉴를 기다려요</p>
+        </div>
+
+        <ul class="menu-list" id="menuList"></ul>
+
+        <div class="add-row">
+          <input
+            class="add-input"
+            id="addInput"
+            maxlength="20"
+            placeholder="새 메뉴 추가..."
+            autocomplete="off"
+          />
+          <button class="add-btn" id="addBtn">+ 추가</button>
+        </div>
+
+        <button class="spin-btn" id="spinBtn">SPIN</button>
+
+        <div class="result" id="result">버튼을 눌러보세요</div>
+
+        <div class="recent">
+          <p class="recent-title">RECENT</p>
+          <ul class="recent-list" id="recentList"></ul>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn blue" id="backToMemoBtn">← 메모장으로</button>
+        <button class="btn pink" id="otherModeBtn">다른 메뉴 보기</button>
+      </div>
+    </section>
+
+    <!-- ─────────────── HELP ─────────────── -->
+    <section id="helpSection" class="hidden">
+      <div class="card">
+        <ul class="help-list">
+          <li>이곳은 카페인으로 하루를 버티는 직장인들의 익명 대나무숲입니다. 고양이 직장인 배경 위에 포스트잇처럼 하소연을 남기고, 카페인을 너무 많이 마신 사람은 하단 땅에 작은 묘로 기록됩니다.</li>
+          <li>1. 카페인 테스트<br>처음에는 오늘 마신 커피 잔 수를 선택합니다. 4잔 이상이면 과카페인 상태로 기록되고, 메모장 하단에 작은 묘가 생깁니다.</li>
+          <li>2. 포스트잇 메모<br>메모는 익명으로 남겨집니다. 메모는 다른 사람에게도 공유될 수 있으며, 작성 후 30일이 지나면 정리됩니다.</li>
+          <li>3. 과카페인 묘<br>묘는 실제 사망을 뜻하지 않습니다. 카페인을 많이 마셔 과부하 상태가 된 방문자를 장난스럽게 표현한 기록입니다. 개별 묘 UI는 오래 쌓이지 않게 정리되지만, 월별 과카페인 숫자는 남습니다.<br><br>예시:<br>2026.05 / 14 people</li>
+          <li>4. 점메추 / 저메추<br>점심과 저녁 메뉴를 함께 추가하고 삭제할 수 있습니다. 사람들이 쌓아가는 메뉴판처럼 유지되며, 버튼을 누르면 고양이가 랜덤으로 메뉴를 골라줍니다.</li>
+          <li>5. 기록 안내<br>포스트잇 메모: 30일 후 삭제<br>개별 묘 UI: 일정 기간 후 정리<br>월별 과카페인 숫자: 보존<br>점메추/저메추 메뉴: 유지 또는 직접 삭제 가능</li>
+          <li>6. 주의사항<br>실명, 연락처, 학번, 회사명, 개인정보는 적지 마세요. 누군가를 공격하거나 특정인을 알아볼 수 있는 내용은 남기지 않는 것이 좋습니다. 이곳은 가볍게 하소연하고 웃고 지나가는 공간입니다.</li>
+          <li>오늘도 살아남았다면, 메모 하나 남기고 가세요.</li>
+        </ul>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn blue"  id="helpBackBtn">← 메모장으로 돌아가기</button>
+        <button class="btn green" id="helpLunchBtn">점메추 열기 ☀️</button>
+        <button class="btn pink"  id="helpDinnerBtn">저메추 열기 🌙</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    /* ═════════════════════════════════════════
+       cafe-utils.html
+       - URL: ?mode=lunch | ?mode=dinner | ?mode=help
+       - 메뉴는 Supabase 실시간 공유, 실패 시 localStorage 폴백
+    ═════════════════════════════════════════ */
+
+    // ─── Supabase 설정 (memo-board.html과 동일) ───
+    const SUPABASE_URL      = "https://rmtkicohvedjlpomutvv.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_rolH6-HKIeF1fu2FvUk5Kg_44mPNQgu";
+
+    // ─── 기본 메뉴 ───
+    const INITIAL_LUNCH  = ["김치찌개", "돈까스", "제육볶음", "마라탕", "국밥", "샐러드 먹는 척", "그냥 커피 한 잔 더"];
+    const INITIAL_DINNER = ["치킨", "라면", "떡볶이", "편의점 삼각김밥", "덮밥", "오늘은 굶기", "집 가서 아무거나"];
+
+    // ─── 로컬 폴백 키 ───
+    const STORAGE_MENUS = "cafe_utils_menus_v1";
+    const STORAGE_LOGS  = "cafe_utils_logs_v1";
+
+    // ─── Supabase 초기화 ───
+    let supa = null;
+    let ONLINE = false;
+    if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+      try {
+        supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        ONLINE = true;
+      } catch (err) {
+        console.warn("[supabase] 초기화 실패:", err);
+      }
+    }
+
+    // ─── 익명 ID (memo-board와 동일 키 사용) ───
+    let anonId = localStorage.getItem("overload_anon_id");
+    if (!anonId) {
+      anonId = "anon_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem("overload_anon_id", anonId);
+    }
+
+    // ─── URL 모드 파싱 ───
+    const params = new URLSearchParams(window.location.search);
+    let mode = (params.get("mode") || "lunch").toLowerCase();
+    if (!["lunch", "dinner", "help"].includes(mode)) mode = "lunch";
+
+    // ─── 상태 ───
+    let menus  = { lunch: [], dinner: [] };
+    let recent = [];
+
+    const CAT_IMAGE_PATHS = {
+      hungry: "images/hungry-cat.png",
+      happy: "images/happy-cat.png",
+      lunch: "images/lunch-cat.png",
+      dinner: "images/dinner-cat.png"
+    };
+
+    const CAT_FALLBACKS = {
+      lunch: { hungry: "😿", happy: "😸", label: "점심고양이가 배고파요" },
+      dinner: { hungry: "🙀", happy: "😽", label: "저녁고양이가 퇴근을 기다려요" }
+    };
+
+    const catFace = document.getElementById("catFace");
+    const catFaceImg = document.getElementById("catFaceImg");
+    const catEmoji = document.getElementById("catEmoji");
+    const catCaption = document.getElementById("catCaption");
+
+    catFaceImg.addEventListener("error", () => {
+      catFace.classList.add("is-fallback");
+    });
+
+    function setCatState(isHappy, menu) {
+      const fallback = CAT_FALLBACKS[mode] || CAT_FALLBACKS.lunch;
+      const imageKey = isHappy ? "happy" : (mode === "lunch" ? "lunch" : "dinner");
+      catFace.classList.remove("is-fallback");
+      catFace.classList.toggle("is-happy", isHappy);
+      catFaceImg.src = CAT_IMAGE_PATHS[imageKey] || CAT_IMAGE_PATHS.hungry;
+      catEmoji.textContent = isHappy ? fallback.happy : fallback.hungry;
+      catCaption.textContent = isHappy && menu
+        ? menu + " 좋다냥!"
+        : fallback.label;
+    }
+
+    // ─── 토스트 ───
+    function showToast(msg, duration) {
+      duration = duration || 1500;
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("is-show");
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove("is-show"), duration);
+    }
+
+    // ─── 로컬 폴백 ───
+    function getLocalMenus() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_MENUS)) || {}; }
+      catch { return {}; }
+    }
+    function saveLocalMenus(d) {
+      localStorage.setItem(STORAGE_MENUS, JSON.stringify(d));
+    }
+    function getLocalLogs() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_LOGS)) || []; }
+      catch { return []; }
+    }
+    function saveLocalLogs(l) {
+      localStorage.setItem(STORAGE_LOGS, JSON.stringify(l));
+    }
+
+    // ─── 기본 메뉴 객체화 ───
+    function getDefaults(type) {
+      const arr = (type === "lunch" ? INITIAL_LUNCH : INITIAL_DINNER);
+      return arr.map(menu => ({ menu, isDefault: true }));
+    }
+
+    // ─── 메뉴 로드 ───
+    async function loadMenus() {
+      menus.lunch  = getDefaults("lunch");
+      menus.dinner = getDefaults("dinner");
+
+      if (ONLINE) {
+        try {
+          const { data } = await supa.from("meal_menus")
+            .select("*").order("created_at", { ascending: true });
+          (data || []).forEach(m => {
+            if (!menus[m.type]) return;
+            if (!menus[m.type].some(x => x.menu === m.menu)) {
+              menus[m.type].push({ menu: m.menu, isDefault: false, id: m.id });
+            }
+          });
+
+          const { data: logData } = await supa.from("meal_logs")
+            .select("*").order("created_at", { ascending: false }).limit(10);
+          if (logData) {
+            recent = logData.map(l => ({ type: l.type, menu: l.selected_menu }));
+          }
+        } catch (err) {
+          console.warn("[supabase] 로드 실패:", err);
+        }
+      } else {
+        const local = getLocalMenus();
+        ["lunch", "dinner"].forEach(t => {
+          (local[t] || []).forEach(menuName => {
+            if (!menus[t].some(x => x.menu === menuName)) {
+              menus[t].push({ menu: menuName, isDefault: false });
+            }
+          });
+        });
+        recent = getLocalLogs();
+      }
+    }
+
+    // ─── 메뉴 렌더 ───
+    function renderMenus() {
+      const ul = document.getElementById("menuList");
+      ul.innerHTML = "";
+      menus[mode].forEach((m, i) => {
+        const li = document.createElement("li");
+        li.dataset.index = i;
+
+        const span = document.createElement("span");
+        span.textContent = m.menu;
+        li.appendChild(span);
+
+        if (!m.isDefault) {
+          const del = document.createElement("button");
+          del.className = "del-btn";
+          del.textContent = "삭제";
+          del.onclick = () => deleteMenu(m);
+          li.appendChild(del);
+        }
+        ul.appendChild(li);
+      });
+    }
+
+    // ─── 최근 렌더 ───
+    function renderRecent() {
+      const ul = document.getElementById("recentList");
+      ul.innerHTML = "";
+      if (recent.length === 0) {
+        const li = document.createElement("li");
+        li.className = "recent-empty";
+        li.textContent = "아직 SPIN 기록이 없어요.";
+        li.style.cssText = "color:#999; font-size:0.78rem;";
+        ul.appendChild(li);
+        return;
+      }
+      recent.slice(0, 8).forEach(r => {
+        const li = document.createElement("li");
+        const tag = r.type === "lunch" ? "점" : "저";
+        li.textContent = "[" + tag + "] " + r.menu;
+        ul.appendChild(li);
+      });
+    }
+
+    // ─── 메뉴 추가 ───
+    async function addMenu() {
+      const input = document.getElementById("addInput");
+      const text  = input.value.trim();
+      if (!text) return;
+      if (text.length > 20) { showToast("20자 이내로 입력해주세요"); return; }
+      if (menus[mode].some(m => m.menu === text)) {
+        showToast("이미 있는 메뉴입니다");
+        return;
+      }
+
+      const item = { menu: text, isDefault: false };
+      menus[mode].push(item);
+      renderMenus();
+      input.value = "";
+
+      if (ONLINE) {
+        try {
+          const { data, error } = await supa.from("meal_menus").insert({
+            type: mode, menu: text, anonymous_id: anonId
+          }).select().single();
+          if (error) throw error;
+          if (data) item.id = data.id;
+        } catch (err) {
+          console.warn("[supabase] 메뉴 저장 실패:", err);
+        }
+      } else {
+        const local = getLocalMenus();
+        if (!local[mode]) local[mode] = [];
+        local[mode].push(text);
+        saveLocalMenus(local);
+      }
+    }
+
+    // ─── 메뉴 삭제 ───
+    async function deleteMenu(item) {
+      const arr = menus[mode];
+      const idx = arr.indexOf(item);
+      if (idx > -1) {
+        arr.splice(idx, 1);
+        renderMenus();
+      }
+
+      if (ONLINE && item.id) {
+        try {
+          await supa.from("meal_menus").delete().eq("id", item.id);
+        } catch (err) {
+          console.warn("[supabase] 삭제 실패:", err);
+        }
+      } else if (!ONLINE) {
+        const local = getLocalMenus();
+        if (local[mode]) {
+          local[mode] = local[mode].filter(m => m !== item.menu);
+          saveLocalMenus(local);
+        }
+      }
+    }
+
+    // ─── 메뉴 랜덤 추천 ───
+    function spin() {
+      const arr = menus[mode];
+      if (arr.length === 0) { showToast("메뉴가 없습니다"); return; }
+
+      const spinBtn = document.getElementById("spinBtn");
+      const result  = document.getElementById("result");
+      spinBtn.disabled = true;
+      result.textContent = "고양이가 메뉴판을 뒤적이는 중...";
+      setCatState(false);
+
+      setTimeout(() => {
+        document.querySelectorAll(".menu-list li").forEach(li => li.classList.remove("is-spotlight"));
+        const idx = Math.floor(Math.random() * arr.length);
+        const li = document.querySelector('.menu-list li[data-index="' + idx + '"]');
+        if (li) {
+          li.classList.add("is-spotlight");
+          li.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+
+        const chosen = arr[idx];
+        result.innerHTML = '오늘은<br/><strong>' + chosen.menu + '</strong>';
+        setCatState(true, chosen.menu);
+        spinBtn.disabled = false;
+
+        recent.unshift({ type: mode, menu: chosen.menu });
+        if (recent.length > 10) recent.pop();
+        renderRecent();
+
+        if (ONLINE) {
+          supa.from("meal_logs").insert({
+            type: mode, selected_menu: chosen.menu, anonymous_id: anonId
+          }).then(({ error }) => {
+            if (error) console.warn("[supabase] 로그 저장 실패:", error);
+          });
+        } else {
+          saveLocalLogs(recent);
+        }
+      }, 420);
+    }
+
+    // ─── 실시간 구독 ───
+    function subscribeRealtime() {
+      if (!ONLINE) return;
+
+      supa.channel("cafe_utils_menus_v1")
+        .on("postgres_changes",
+            { event: "INSERT", schema: "public", table: "meal_menus" },
+            payload => {
+              const m = payload.new;
+              if (m.anonymous_id === anonId) return;
+              if (!menus[m.type]) return;
+              if (!menus[m.type].some(x => x.menu === m.menu)) {
+                menus[m.type].push({ menu: m.menu, isDefault: false, id: m.id });
+                if (mode === m.type) renderMenus();
+              }
+            })
+        .on("postgres_changes",
+            { event: "DELETE", schema: "public", table: "meal_menus" },
+            payload => {
+              const oldM = payload.old;
+              Object.keys(menus).forEach(t => {
+                const idx = menus[t].findIndex(x => x.id === oldM.id);
+                if (idx > -1) menus[t].splice(idx, 1);
+              });
+              renderMenus();
+            })
+        .subscribe();
+
+      supa.channel("cafe_utils_logs_v1")
+        .on("postgres_changes",
+            { event: "INSERT", schema: "public", table: "meal_logs" },
+            payload => {
+              const l = payload.new;
+              if (l.anonymous_id === anonId) return;
+              recent.unshift({ type: l.type, menu: l.selected_menu });
+              if (recent.length > 10) recent.pop();
+              renderRecent();
+            })
+        .subscribe();
+    }
+
+    // ─── 화면 전환 ───
+    function showSection(m) {
+      mode = m;
+      const helpEl = document.getElementById("helpSection");
+      const recommendEl  = document.getElementById("recommendSection");
+
+      if (m === "help") {
+        recommendEl.classList.add("hidden");
+        helpEl.classList.remove("hidden");
+        document.getElementById("pageTitle").textContent = "오늘도 과부하 사용법";
+        document.getElementById("pageSub").textContent   = "이 웹의 약속들";
+      } else {
+        helpEl.classList.add("hidden");
+        recommendEl.classList.remove("hidden");
+
+        if (m === "lunch") {
+          document.getElementById("pageTitle").textContent = "오늘 점심 뭐 먹지?";
+          document.getElementById("pageSub").textContent   = "다 같이 점메추 🍱";
+          document.getElementById("otherModeBtn").textContent = "저메추 보기 🌙";
+        } else {
+          document.getElementById("pageTitle").textContent = "오늘 저녁 뭐 먹지?";
+          document.getElementById("pageSub").textContent   = "다 같이 저메추 🌙";
+          document.getElementById("otherModeBtn").textContent = "점메추 보기 ☀️";
+        }
+        setCatState(false);
+        renderMenus();
+        renderRecent();
+      }
+    }
+
+    // ─── 버튼 바인딩 ───
+    document.getElementById("addBtn").addEventListener("click", addMenu);
+    document.getElementById("addInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); addMenu(); }
+    });
+    document.getElementById("spinBtn").addEventListener("click", spin);
+
+    document.getElementById("backToMemoBtn").addEventListener("click", () => {
+      window.location.href = "memo-board.html";
+    });
+    document.getElementById("otherModeBtn").addEventListener("click", () => {
+      const next = (mode === "lunch") ? "dinner" : "lunch";
+      window.location.href = "cafe-utils.html?mode=" + next;
+    });
+
+    document.getElementById("helpBackBtn").addEventListener("click", () => {
+      window.location.href = "memo-board.html";
+    });
+    document.getElementById("helpLunchBtn").addEventListener("click", () => {
+      window.location.href = "cafe-utils.html?mode=lunch";
+    });
+    document.getElementById("helpDinnerBtn").addEventListener("click", () => {
+      window.location.href = "cafe-utils.html?mode=dinner";
+    });
+
+    // ─── 초기화 ───
+    async function init() {
+      if (mode === "help") {
+        showSection("help");
+      } else {
+        await loadMenus();
+        showSection(mode);
+        subscribeRealtime();
+      }
+    }
+    init();
+  </script>
+</body>
+</html>
