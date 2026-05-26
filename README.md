@@ -11,7 +11,8 @@
 ## 🔗 Link
 
 - GitHub Repository: https://github.com/i0kyung/caffeine-people
-- GitHub Pages: https://i0kyung.github.io/caffeine-people/
+- Website: https://i0kyung.github.io/caffeine-people/
+- Direct Test Page: https://i0kyung.github.io/caffeine-people/loading-test.html
 
 ---
 
