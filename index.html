@@ -6,6 +6,13 @@
   <meta name="theme-color" content="#F5F4F5" />
   <title>오늘도 과부하 | Loading Test</title>
 
+  <!-- 앱 아이콘 -->
+  <link rel="icon" type="image/png" sizes="32x32" href="images/app/icon-32.png" />
+  <link rel="icon" type="image/png" sizes="64x64" href="images/app/icon-64.png" />
+  <link rel="apple-touch-icon" href="images/app/apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="preload" as="image" href="images/app/icon-256.webp" />
+
   <!-- 한국어 UI 폰트: LINE Seed Sans KR -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@kfonts/line-seed-sans-kr/index.css" />
 
@@ -95,6 +102,8 @@
     }
 
     .test-inner {
+      position: relative;
+      z-index: 1;
       width: min(100%, 430px);
       min-height: 100svh;
       padding: 28px 22px 26px;
@@ -348,7 +357,6 @@
       text-shadow:
         0 0 28px rgba(192, 57, 43, 0.55),
         0 6px 14px rgba(0, 0, 0, 0.9);
-      animation: diedAppear 1.7s ease both;
     }
 
     @keyframes diedAppear {
@@ -401,12 +409,858 @@
       font-size: 0.72rem;
       letter-spacing: 0.22em;
       color: rgba(255, 255, 255, 0.36);
-      animation: pulse 1.6s ease-in-out infinite;
     }
 
     @keyframes pulse {
       0%, 100% { opacity: 0.35; }
       50% { opacity: 1; }
+    }
+
+    /* =========================
+       모션 레이어
+    ========================= */
+
+    /* 배경에 떠다니는 원두 / 김 */
+    .ambient {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      translate: var(--px, 0) var(--py, 0);
+      transition: translate 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+    }
+
+    .ambient span {
+      position: absolute;
+      bottom: -60px;
+      left: var(--x);
+      width: var(--s);
+      height: calc(var(--s) * 1.3);
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8B5A3C, #4A2A1C);
+      opacity: 0;
+      animation: beanFloat var(--t) linear var(--d) infinite;
+    }
+
+    .ambient span::after {
+      content: "";
+      position: absolute;
+      left: 48%;
+      top: 12%;
+      width: 2px;
+      height: 76%;
+      border-radius: 2px;
+      background: rgba(255, 233, 200, 0.45);
+      transform: rotate(8deg);
+    }
+
+    @keyframes beanFloat {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+      12%  { opacity: 0.16; }
+      85%  { opacity: 0.16; }
+      100% { transform: translateY(-115vh) rotate(260deg); opacity: 0; }
+    }
+
+    .loading-test.is-dead .ambient {
+      opacity: 0;
+    }
+
+    /* 진입 시 순차 등장 */
+    .reveal {
+      animation: revealUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--d, 0s);
+    }
+
+    @keyframes revealUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 고양이: 숨쉬기 + 커서 따라 고개 기울이기 */
+    .cat-face {
+      animation: catBreath 3.6s ease-in-out infinite;
+    }
+
+    @keyframes catBreath {
+      0%, 100% { translate: 0 0; scale: 1; }
+      50%      { translate: 0 -5px; scale: 1.015; }
+    }
+
+    .cat-face-frame {
+      rotate: var(--tilt, 0deg);
+      transition:
+        background 0.35s ease,
+        box-shadow 0.35s ease,
+        rotate 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* 잔 수가 위험 구간이면 미리 덜덜 */
+    .cat-face-frame.is-jitter .cat-face {
+      animation: catJitter 0.16s linear infinite;
+    }
+
+    @keyframes catJitter {
+      0%   { translate: 0 0; }
+      25%  { translate: -1.5px 1px; }
+      50%  { translate: 1.5px -1px; }
+      75%  { translate: -1px -1px; }
+      100% { translate: 0 0; }
+    }
+
+    .cat-face-frame.is-nudge {
+      animation: frameNudge 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes frameNudge {
+      0%   { transform: scale(1); }
+      35%  { transform: scale(1.06) translateY(-4px); }
+      100% { transform: scale(1); }
+    }
+
+    .cat-face-frame.is-pop {
+      animation: facePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes facePop {
+      0%   { transform: scale(0.78) rotate(-6deg); }
+      55%  { transform: scale(1.1) rotate(3deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+
+    /* 커피 버튼 */
+    .coffee-btn {
+      position: relative;
+      overflow: hidden;
+      transition:
+        transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.25s ease,
+        background 0.25s ease;
+    }
+
+    .coffee-btn img {
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .coffee-btn:hover {
+      transform: translateY(-5px);
+      filter: none;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 18px 30px rgba(82, 52, 34, 0.13);
+    }
+
+    .coffee-btn:hover img {
+      transform: rotate(-8deg) scale(1.08);
+    }
+
+    #minusCup:hover img {
+      transform: rotate(8deg) scale(1.04);
+    }
+
+    .coffee-btn:active {
+      transform: translateY(0) scale(0.93);
+      transition-duration: 0.08s;
+    }
+
+    .coffee-btn.is-sip img {
+      animation: cupSip 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes cupSip {
+      0%   { transform: rotate(0) scale(1); }
+      35%  { transform: rotate(-22deg) scale(1.12) translateY(-6px); }
+      100% { transform: rotate(0) scale(1); }
+    }
+
+    .coffee-btn.is-shake img {
+      animation: cupShake 0.36s ease;
+    }
+
+    @keyframes cupShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px) rotate(-6deg); }
+      75% { transform: translateX(5px) rotate(6deg); }
+    }
+
+    /* 버튼 누른 자리 물결 */
+    .ripple {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      margin: -6px 0 0 -6px;
+      border-radius: 50%;
+      background: rgba(255, 224, 138, 0.6);
+      pointer-events: none;
+      animation: ripple 0.6s ease-out forwards;
+    }
+
+    @keyframes ripple {
+      from { transform: scale(0); opacity: 1; }
+      to   { transform: scale(16); opacity: 0; }
+    }
+
+    /* 숫자 */
+    .count-wrap {
+      position: relative;
+      transition: box-shadow 0.3s ease, background 0.3s ease;
+    }
+
+    .count-number {
+      display: inline-block;
+      font-variant-numeric: tabular-nums;
+      transition: color 0.3s ease;
+    }
+
+    .count-number.is-up   { animation: countUp 0.38s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .count-number.is-down { animation: countDown 0.38s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+    @keyframes countUp {
+      0%   { transform: translateY(14px) scale(0.8); opacity: 0.2; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    @keyframes countDown {
+      0%   { transform: translateY(-14px) scale(0.8); opacity: 0.2; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .count-wrap.is-warn {
+      background: rgba(255, 236, 228, 0.92);
+      box-shadow: 0 10px 28px rgba(192, 57, 43, 0.16);
+    }
+
+    .count-wrap.is-warn .count-number {
+      color: var(--red);
+    }
+
+    .float-chip {
+      position: absolute;
+      top: 6px;
+      right: 22px;
+      font-size: 0.9rem;
+      font-weight: 900;
+      color: var(--coffee);
+      pointer-events: none;
+      animation: chipFloat 0.8s ease-out forwards;
+    }
+
+    .float-chip.is-minus {
+      color: var(--ink-soft);
+    }
+
+    @keyframes chipFloat {
+      from { transform: translateY(0); opacity: 1; }
+      to   { transform: translateY(-34px); opacity: 0; }
+    }
+
+    /* DRINK 버튼 반짝 */
+    .drink-btn {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    }
+
+    .drink-btn::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -60%;
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(100deg, transparent, rgba(255, 247, 211, 0.38), transparent);
+      transform: skewX(-18deg);
+      transition: left 0.6s ease;
+    }
+
+    .drink-btn:hover::after {
+      left: 130%;
+    }
+
+    .drink-btn:active {
+      transition-duration: 0.08s;
+    }
+
+    .drink-btn.is-gulp {
+      animation: gulp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes gulp {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(0.92, 1.06); }
+      60%  { transform: scale(1.04, 0.96); }
+      100% { transform: scale(1); }
+    }
+
+    /* 결과 */
+    .result-message.is-in {
+      animation: revealUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .enter-btn {
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    }
+
+    .enter-btn.is-show {
+      animation: enterIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+    }
+
+    @keyframes enterIn {
+      from { opacity: 0; transform: translateY(14px) scale(0.9); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .enter-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 7px 0 rgba(61, 34, 23, 0.88);
+    }
+
+    .enter-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 rgba(61, 34, 23, 0.88);
+    }
+
+    .enter-arrow {
+      display: inline-block;
+      margin-left: 4px;
+      animation: nudgeRight 1.2s ease-in-out infinite;
+    }
+
+    @keyframes nudgeRight {
+      0%, 100% { transform: translateX(0); }
+      50%      { transform: translateX(4px); }
+    }
+
+    /* 과부하: 화면 흔들림 */
+    .loading-test.is-quake .test-inner {
+      animation: quake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+    }
+
+    @keyframes quake {
+      10%, 90% { transform: translateX(-2px); }
+      20%, 80% { transform: translateX(4px); }
+      30%, 50%, 70% { transform: translateX(-8px) rotate(-0.4deg); }
+      40%, 60% { transform: translateX(8px) rotate(0.4deg); }
+    }
+
+    /* YOU DIED 순차 등장 */
+    .you-died-overlay > * {
+      opacity: 0;
+    }
+
+    .you-died-overlay.is-show .dead-cat {
+      animation: deadCatDrop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+    }
+
+    .you-died-overlay.is-show .you-died-text {
+      animation: diedAppear 1.7s ease 0.6s both;
+    }
+
+    .you-died-overlay.is-show .you-died-sub,
+    .you-died-overlay.is-show .you-died-ko {
+      animation: revealUp 0.8s ease 1.5s both;
+    }
+
+    .you-died-overlay.is-show .dead-grave {
+      animation: graveRise 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 1.9s both;
+    }
+
+    .you-died-overlay.is-show .tap-anywhere {
+      animation: fadeIn 0.6s ease 2.6s both, pulse 1.6s ease-in-out 3.2s infinite;
+    }
+
+    @keyframes deadCatDrop {
+      0%   { opacity: 0; transform: translateY(-60px) rotate(-20deg); }
+      100% { opacity: 1; transform: translateY(0) rotate(0); }
+    }
+
+    @keyframes graveRise {
+      from { opacity: 0; transform: translateY(36px) scaleY(0.6); }
+      to   { opacity: 1; transform: translateY(0) scaleY(1); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 0.35; }
+    }
+
+    /* 페이지 넘어갈 때 */
+    body.is-leaving .test-inner,
+    body.is-leaving .you-died-overlay {
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      opacity: 0;
+      transform: translateY(-10px) scale(0.98);
+    }
+
+    .key-hint {
+      display: none;
+      margin-top: 18px;
+      font-size: 0.72rem;
+      color: var(--ink-soft);
+      letter-spacing: 0.02em;
+      opacity: 0.75;
+    }
+
+    .key-hint kbd {
+      display: inline-block;
+      min-width: 22px;
+      padding: 2px 6px;
+      margin: 0 2px;
+      border-radius: 6px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 2px 0 var(--line);
+      font-family: inherit;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: var(--coffee);
+    }
+
+    .key-hint kbd.is-press {
+      transform: translateY(2px);
+      box-shadow: none;
+      background: var(--yellow);
+    }
+
+    /* =========================
+       데스크톱
+    ========================= */
+    @media (min-width: 900px) and (hover: hover) {
+      .loading-test,
+      .loading-test.is-normal {
+        background:
+          radial-gradient(circle at 22% 18%, rgba(255, 224, 138, 0.28), transparent 38%),
+          radial-gradient(circle at 80% 85%, rgba(107, 58, 42, 0.12), transparent 42%),
+          linear-gradient(160deg, #FFFDF7 0%, #F4ECDF 100%);
+      }
+
+      .loading-test.is-happy {
+        background:
+          radial-gradient(circle at 50% 40%, rgba(255, 224, 138, 0.38), transparent 55%),
+          linear-gradient(160deg, #FFFDF7 0%, #FFF3D6 100%);
+      }
+
+      .test-inner {
+        width: 460px;
+        min-height: 0;
+        padding: 40px 40px 34px;
+        border-radius: 36px;
+        background: rgba(255, 252, 243, 0.72);
+        border: 1px solid rgba(234, 218, 192, 0.8);
+        box-shadow:
+          0 40px 90px rgba(74, 48, 32, 0.14),
+          0 2px 0 rgba(255, 255, 255, 0.9) inset;
+        backdrop-filter: blur(14px);
+      }
+
+      .loading-test.is-dead .test-inner {
+        background: rgba(30, 24, 22, 0.6);
+        border-color: rgba(255, 255, 255, 0.06);
+      }
+
+      .loading-test.is-dead .question-ko {
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .key-hint {
+        display: block;
+      }
+    }
+
+    /* =========================
+       앱 실행 스플래시
+    ========================= */
+    .splash {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      overflow: hidden;
+      background: #FBF1E2;
+      color: #FFF8E9;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* 1) 크림 화면 위 아이콘 */
+    .splash-intro {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 50% 45%, #FFFBF2 0%, #F6E6CF 75%);
+      animation: introOut 0.7s cubic-bezier(0.65, 0, 0.35, 1) 1.15s forwards;
+    }
+
+    .splash-intro-icon {
+      width: 132px;
+      height: 132px;
+      border-radius: 30px;
+      box-shadow: 0 24px 50px rgba(107, 58, 42, 0.28);
+      animation:
+        iconLaunch 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both,
+        iconSquish 0.5s ease-in-out 0.9s;
+    }
+
+    @keyframes iconLaunch {
+      0%   { opacity: 0; transform: scale(0.4) rotate(-12deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0); }
+    }
+
+    @keyframes iconSquish {
+      0%, 100% { transform: scale(1); }
+      40%      { transform: scale(1.08, 0.92); }
+      70%      { transform: scale(0.96, 1.04); }
+    }
+
+    @keyframes introOut {
+      0%   { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.12); visibility: hidden; }
+    }
+
+    /* 2) 일러스트 배경 */
+    .splash-art {
+      position: absolute;
+      inset: 0;
+    }
+
+    .splash-art-blur {
+      display: none;
+    }
+
+    .splash-art-main {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 38%;
+      transform: scale(1.14);
+      animation: artSettle 2.8s cubic-bezier(0.22, 1, 0.36, 1) 1.1s forwards;
+    }
+
+    @keyframes artSettle {
+      to { transform: scale(1.02); }
+    }
+
+    .splash-art::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg,
+          rgba(43, 24, 14, 0.5) 0%,
+          rgba(43, 24, 14, 0) 26%,
+          rgba(43, 24, 14, 0) 56%,
+          rgba(33, 18, 10, 0.82) 100%);
+    }
+
+    /* 김 */
+    .splash-steam {
+      position: absolute;
+      left: 50%;
+      top: 22%;
+      width: 160px;
+      height: 200px;
+      margin-left: -80px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .splash-steam span {
+      position: absolute;
+      bottom: 0;
+      left: var(--x);
+      width: 26px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.55), transparent 70%);
+      filter: blur(6px);
+      opacity: 0;
+      animation: steamRise 3.2s ease-out var(--d) infinite;
+    }
+
+    @keyframes steamRise {
+      0%   { opacity: 0; transform: translateY(20px) scaleX(0.6); }
+      30%  { opacity: 0.7; }
+      100% { opacity: 0; transform: translateY(-130px) scaleX(1.6) translateX(14px); }
+    }
+
+    /* 3) 제목 */
+    .splash-title-wrap {
+      position: absolute;
+      top: max(56px, 9vh);
+      left: 0;
+      right: 0;
+      z-index: 3;
+      text-align: center;
+    }
+
+    .splash-kicker {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 248, 233, 0.18);
+      border: 1px solid rgba(255, 248, 233, 0.35);
+      backdrop-filter: blur(8px);
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.24em;
+      animation: revealUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 1.45s both;
+    }
+
+    .splash-title {
+      margin-top: 12px;
+      font-size: clamp(2rem, 9vw, 3.4rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      text-shadow: 0 4px 22px rgba(43, 24, 14, 0.55);
+    }
+
+    .splash-title .ch {
+      display: inline-block;
+      animation: charDrop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      animation-delay: calc(1.55s + var(--i) * 0.06s);
+    }
+
+    .splash-title .ch.is-space {
+      width: 0.28em;
+    }
+
+    @keyframes charDrop {
+      0%   { opacity: 0; transform: translateY(-36px) rotate(-14deg) scale(0.7); }
+      100% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+    }
+
+    /* 4) 하단 로딩 패널 */
+    .splash-panel {
+      position: absolute;
+      left: 50%;
+      bottom: max(34px, calc(env(safe-area-inset-bottom) + 24px));
+      z-index: 3;
+      width: min(380px, calc(100% - 32px));
+      padding: 14px 16px 16px;
+      border-radius: 22px;
+      background: rgba(43, 24, 14, 0.42);
+      border: 1px solid rgba(255, 248, 233, 0.2);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 20px 44px rgba(20, 10, 4, 0.35);
+      transform: translateX(-50%);
+      animation: panelUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1.5s both;
+    }
+
+    @keyframes panelUp {
+      from { opacity: 0; transform: translate(-50%, 30px); }
+      to   { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    .splash-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .splash-mini-icon {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      border-radius: 12px;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+      animation: miniBob 1.6s ease-in-out infinite;
+    }
+
+    @keyframes miniBob {
+      0%, 100% { transform: translateY(0) rotate(-3deg); }
+      50%      { transform: translateY(-4px) rotate(3deg); }
+    }
+
+    .splash-info {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+    }
+
+    .splash-status-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .splash-status {
+      font-size: 0.82rem;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .splash-status.is-swap {
+      animation: statusSwap 0.35s ease;
+    }
+
+    @keyframes statusSwap {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .splash-pct {
+      font-size: 0.78rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--yellow);
+    }
+
+    .splash-track {
+      position: relative;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255, 248, 233, 0.18);
+      overflow: visible;
+    }
+
+    .splash-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      border-radius: 999px;
+      background:
+        repeating-linear-gradient(-45deg, rgba(255,255,255,0.14) 0 6px, transparent 6px 12px),
+        linear-gradient(90deg, #8B5A3C, #C98A55 70%, #FFE08A);
+      background-size: 34px 100%, 100% 100%;
+      animation: brewFlow 0.9s linear infinite;
+      transition: width 0.25s linear;
+      box-shadow: 0 0 14px rgba(255, 224, 138, 0.45);
+    }
+
+    @keyframes brewFlow {
+      to { background-position: 34px 0, 0 0; }
+    }
+
+    .splash-bean {
+      position: absolute;
+      top: 50%;
+      left: 0%;
+      width: 16px;
+      height: 20px;
+      margin: -10px 0 0 -8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8B5A3C, #3D2217);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      animation: beanRoll 0.6s linear infinite;
+      transition: left 0.25s linear;
+    }
+
+    .splash-bean::after {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 3px;
+      width: 2px;
+      height: 14px;
+      border-radius: 2px;
+      background: rgba(255, 233, 200, 0.6);
+      transform: rotate(10deg);
+    }
+
+    @keyframes beanRoll {
+      to { transform: rotate(360deg); }
+    }
+
+    .splash-skip {
+      margin-top: 10px;
+      font-size: 0.66rem;
+      letter-spacing: 0.14em;
+      text-align: center;
+      color: rgba(255, 248, 233, 0.55);
+      animation: revealUp 0.5s ease 2.2s both;
+    }
+
+    /* 5) 닫힐 때: 컵 속으로 빨려 들어가듯 */
+    .splash.is-done {
+      pointer-events: none;
+      animation: splashOut 0.75s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+
+    .splash.is-done .splash-art-main {
+      animation: artZoomOut 0.75s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+
+    .splash.is-done .splash-panel {
+      animation: panelDown 0.4s ease forwards;
+    }
+
+    .splash.is-done .splash-title-wrap {
+      transition: opacity 0.3s ease, transform 0.4s ease;
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+
+    @keyframes splashOut {
+      0%   { clip-path: circle(150% at 50% 55%); }
+      100% { clip-path: circle(0% at 50% 55%); }
+    }
+
+    @keyframes artZoomOut {
+      to { transform: scale(1.3); filter: blur(3px); }
+    }
+
+    @keyframes panelDown {
+      to { opacity: 0; transform: translate(-50%, 24px); }
+    }
+
+    /* 부팅 중엔 본 화면 등장 애니메이션 대기 */
+    body.is-booting .reveal,
+    body.is-booting .cat-face {
+      animation-play-state: paused;
+    }
+
+    @media (min-width: 900px) {
+      /* 넓은 화면: 흐린 배경 + 가운데 세로 일러스트 */
+      .splash {
+        background: #2A1A10;
+      }
+
+      .splash-art-blur {
+        display: block;
+        position: absolute;
+        inset: -60px;
+        width: calc(100% + 120px);
+        height: calc(100% + 120px);
+        object-fit: cover;
+        filter: blur(40px) brightness(0.7) saturate(1.2);
+      }
+
+      .splash-art-main {
+        left: 50%;
+        right: auto;
+        width: auto;
+        aspect-ratio: 941 / 1672;
+        translate: -50% 0;
+        box-shadow: 0 0 140px rgba(0, 0, 0, 0.5);
+      }
+
+      .splash-title-wrap {
+        top: 7vh;
+      }
+
+      .splash-steam {
+        top: 18%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      .ambient {
+        display: none;
+      }
     }
 
     @media (max-width: 380px) {
@@ -435,19 +1289,61 @@
   </style>
 </head>
 
-<body>
+<body class="is-booting">
+  <!-- 앱 실행 스플래시 -->
+  <div id="splash" class="splash" role="status" aria-live="polite" aria-label="오늘도 과부하 불러오는 중">
+    <div class="splash-art" aria-hidden="true">
+      <img class="splash-art-blur" src="images/app/splash-sm.webp" alt="" />
+      <img id="splashArt" class="splash-art-main" src="images/app/splash.webp" alt="" />
+    </div>
+
+    <div class="splash-steam" aria-hidden="true">
+      <span style="--x: 20px; --d: 1.2s"></span>
+      <span style="--x: 66px; --d: 2.1s"></span>
+      <span style="--x: 110px; --d: 1.6s"></span>
+    </div>
+
+    <div class="splash-title-wrap">
+      <span class="splash-kicker">CAFFEINE PEOPLE</span>
+      <h1 id="splashTitle" class="splash-title">오늘도 과부하</h1>
+    </div>
+
+    <div class="splash-panel">
+      <div class="splash-row">
+        <img class="splash-mini-icon" src="images/app/icon-256.webp" alt="" />
+        <div class="splash-info">
+          <div class="splash-status-line">
+            <span id="splashStatus" class="splash-status">원두 가는 중...</span>
+            <span id="splashPct" class="splash-pct">0%</span>
+          </div>
+          <div class="splash-track">
+            <div id="splashFill" class="splash-fill"></div>
+            <div id="splashBean" class="splash-bean"></div>
+          </div>
+        </div>
+      </div>
+      <p class="splash-skip">탭하여 바로 시작</p>
+    </div>
+
+    <div class="splash-intro" aria-hidden="true">
+      <img class="splash-intro-icon" src="images/app/icon-256.webp" alt="" />
+    </div>
+  </div>
+
   <main id="loadingTest" class="loading-test is-normal">
+    <div id="ambient" class="ambient" aria-hidden="true"></div>
+
     <section class="test-inner">
-      <div class="question">
+      <div class="question reveal" style="--d: 0.05s">
         <p class="question-en">CAFFEINE CHECK</p>
         <p class="question-ko">오늘, 커피 몇 잔째냥 ?</p>
       </div>
 
-      <div id="catFaceFrame" class="cat-face-frame is-normal">
+      <div id="catFaceFrame" class="cat-face-frame is-normal reveal" style="--d: 0.15s">
         <img id="catFace" class="cat-face" src="images/icons/cat_face_normal.png" alt="고양이 표정" />
       </div>
 
-      <div class="coffee-controls">
+      <div class="coffee-controls reveal" style="--d: 0.25s">
         <button id="minusCup" class="coffee-btn" type="button" aria-label="커피 잔 수 줄이기">
           <img src="images/icons/coffee_empty.png" alt="빈 커피컵" />
         </button>
@@ -457,16 +1353,20 @@
         </button>
       </div>
 
-      <div class="count-wrap">
+      <div id="countWrap" class="count-wrap reveal" style="--d: 0.32s">
         <span id="cupCount" class="count-number">0</span>
         <span class="count-unit">잔</span>
       </div>
 
-      <button id="drinkButton" class="drink-btn" type="button">DRINK</button>
+      <button id="drinkButton" class="drink-btn reveal" style="--d: 0.4s" type="button">DRINK</button>
 
       <p id="resultMessage" class="result-message"></p>
 
-      <button id="enterButton" class="enter-btn" type="button">메인으로 들어가기 →</button>
+      <button id="enterButton" class="enter-btn" type="button">메인으로 들어가기<span class="enter-arrow">→</span></button>
+
+      <p class="key-hint reveal" style="--d: 0.55s">
+        <kbd data-key="left">←</kbd><kbd data-key="right">→</kbd> 잔 수 조절 · <kbd data-key="enter">Enter</kbd> 마시기
+      </p>
     </section>
   </main>
 
@@ -510,13 +1410,77 @@
       return "normal";
     }
 
-    function updateCount() {
+    const countWrap = document.getElementById("countWrap");
+    const ambient = document.getElementById("ambient");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* 애니메이션 클래스를 다시 걸어 매번 재생되게 */
+    function replay(el, className) {
+      el.classList.remove(className);
+      void el.offsetWidth;
+      el.classList.add(className);
+    }
+
+    /* 등장 애니메이션은 한 번만: 끝나면 클래스 제거 (다른 애니메이션과 충돌 방지) */
+    document.querySelectorAll(".reveal").forEach(el => {
+      el.addEventListener("animationend", function done(e) {
+        if (e.target !== el || e.animationName !== "revealUp") return;
+        el.classList.remove("reveal");
+        el.removeEventListener("animationend", done);
+      });
+    });
+
+    function updateCount(direction) {
       cupCount.textContent = cups;
+
+      if (direction) {
+        cupCount.classList.remove("is-up", "is-down");
+        replay(cupCount, direction > 0 ? "is-up" : "is-down");
+
+        const chip = document.createElement("span");
+        chip.className = "float-chip" + (direction < 0 ? " is-minus" : "");
+        chip.textContent = direction > 0 ? "+1" : "-1";
+        countWrap.appendChild(chip);
+        chip.addEventListener("animationend", () => chip.remove());
+      }
+
+      /* 결과 보기 전, 잔 수만으로 미리 경고 */
+      if (!testFinished) {
+        const risky = cups >= OVERLOAD_THRESHOLD;
+        countWrap.classList.toggle("is-warn", risky);
+        catFaceFrame.classList.toggle("is-jitter", risky);
+      }
+    }
+
+    function addRipple(button, e) {
+      const rect = button.getBoundingClientRect();
+      const fromPointer = e && e.clientX;
+      const dot = document.createElement("span");
+      dot.className = "ripple";
+      dot.style.left = (fromPointer ? e.clientX - rect.left : rect.width / 2) + "px";
+      dot.style.top = (fromPointer ? e.clientY - rect.top : rect.height / 2) + "px";
+      button.appendChild(dot);
+      dot.addEventListener("animationend", () => dot.remove());
+    }
+
+    /* 배경 원두 */
+    function buildAmbient() {
+      if (reduceMotion) return;
+      const count = window.innerWidth >= 900 ? 18 : 8;
+      for (let i = 0; i < count; i++) {
+        const bean = document.createElement("span");
+        bean.style.setProperty("--x", (Math.random() * 100).toFixed(1) + "%");
+        bean.style.setProperty("--s", (10 + Math.random() * 14).toFixed(0) + "px");
+        bean.style.setProperty("--t", (14 + Math.random() * 14).toFixed(1) + "s");
+        bean.style.setProperty("--d", (-Math.random() * 20).toFixed(1) + "s");
+        ambient.appendChild(bean);
+      }
     }
 
     function setVisualState(state) {
       loadingTest.classList.remove("is-happy", "is-normal", "is-dead");
-      catFaceFrame.classList.remove("is-happy", "is-normal", "is-dead", "is-pop");
+      catFaceFrame.classList.remove("is-happy", "is-normal", "is-dead", "is-pop", "is-jitter", "is-nudge");
+      countWrap.classList.remove("is-warn");
       resultMessage.classList.remove("is-dead");
 
       loadingTest.classList.add("is-" + state);
@@ -549,9 +1513,13 @@ function saveResult(state) {
   localStorage.setItem("caffeine_session_id", sessionId);
 }
 
-    function showResult() {
+    function showResult(e) {
       const state = getState(cups);
       testFinished = true;
+
+      addRipple(drinkButton, e);
+      replay(drinkButton, "is-gulp");
+      enterButton.classList.remove("is-show");
 
       setVisualState(state);
       saveResult(state);
@@ -566,35 +1534,230 @@ function saveResult(state) {
         enterButton.classList.add("is-show");
       }
 
+      replay(resultMessage, "is-in");
+
       if (state === "dead") {
         resultMessage.textContent = "X _ X";
+        replay(loadingTest, "is-quake");
         setTimeout(() => {
           youDiedOverlay.classList.add("is-show");
         }, 500);
       }
     }
 
+    let leaving = false;
+
     function enterMain() {
-      if (!testFinished) return;
-      window.location.href = NEXT_PAGE;
+      if (!testFinished || leaving) return;
+      leaving = true;
+      document.body.classList.add("is-leaving");
+      setTimeout(() => {
+        window.location.href = NEXT_PAGE;
+      }, reduceMotion ? 0 : 320);
     }
 
-    minusCup.addEventListener("click", () => {
+    function removeCup(e) {
+      addRipple(minusCup, e);
       if (cups > 0) {
         cups -= 1;
-        updateCount();
+        updateCount(-1);
+      } else {
+        replay(minusCup, "is-shake");
+      }
+    }
+
+    function addCup(e) {
+      addRipple(plusCup, e);
+      cups += 1;
+      updateCount(1);
+      replay(plusCup, "is-sip");
+      if (!testFinished) replay(catFaceFrame, "is-nudge");
+    }
+
+    minusCup.addEventListener("click", removeCup);
+    plusCup.addEventListener("click", addCup);
+
+    /* 데스크톱: 키보드 조작 */
+    function flashKey(name) {
+      const key = document.querySelector('.key-hint kbd[data-key="' + name + '"]');
+      if (!key) return;
+      key.classList.add("is-press");
+      setTimeout(() => key.classList.remove("is-press"), 140);
+    }
+
+    document.addEventListener("keydown", e => {
+      if (leaving) return;
+
+      /* 스플래시 중엔 아무 키나 누르면 바로 시작 */
+      if (booting) {
+        e.preventDefault();
+        finishBoot();
+        return;
+      }
+
+      if (youDiedOverlay.classList.contains("is-show")) {
+        if (e.key === "Enter" || e.key === " ") enterMain();
+        return;
+      }
+
+      /* 포커스된 버튼의 기본 Enter/Space 동작은 그대로 둔다 */
+      const onButton = e.target.closest && e.target.closest("button");
+      if (onButton && (e.key === "Enter" || e.key === " ")) return;
+
+      if (e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "+") {
+        e.preventDefault();
+        flashKey("right");
+        addCup();
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "-") {
+        e.preventDefault();
+        flashKey("left");
+        removeCup();
+      } else if (e.key === "Enter") {
+        flashKey("enter");
+        if (enterButton.classList.contains("is-show")) enterMain();
+        else showResult();
       }
     });
 
-    plusCup.addEventListener("click", () => {
-      cups += 1;
-      updateCount();
-    });
+    /* 데스크톱: 커서 따라 고양이 고개 + 배경 시차 */
+    if (!reduceMotion && window.matchMedia("(hover: hover)").matches) {
+      document.addEventListener("pointermove", e => {
+        const nx = e.clientX / window.innerWidth - 0.5;
+        const ny = e.clientY / window.innerHeight - 0.5;
+        catFaceFrame.style.setProperty("--tilt", (nx * 10).toFixed(2) + "deg");
+        ambient.style.setProperty("--px", (nx * -24).toFixed(1) + "px");
+        ambient.style.setProperty("--py", (ny * -24).toFixed(1) + "px");
+      });
+    }
 
     drinkButton.addEventListener("click", showResult);
     enterButton.addEventListener("click", enterMain);
     youDiedOverlay.addEventListener("click", enterMain);
 
+    /* =========================
+       앱 실행 스플래시
+    ========================= */
+    const splash = document.getElementById("splash");
+    const splashFill = document.getElementById("splashFill");
+    const splashBean = document.getElementById("splashBean");
+    const splashPct = document.getElementById("splashPct");
+    const splashStatus = document.getElementById("splashStatus");
+    const splashTitle = document.getElementById("splashTitle");
+
+    const SPLASH_SEEN_KEY = "caffeine_splash_seen";
+    const SPLASH_MIN_MS = reduceMotion ? 600 : 3400;
+    const SPLASH_MAX_MS = 9000;
+    const SPLASH_STEPS = [
+      "원두 가는 중...",
+      "얼음 와르르 넣는 중...",
+      "샷 추가하는 중...",
+      "졸린 고양이 깨우는 중...",
+      "출근 준비 완료!"
+    ];
+    const PRELOAD_IMAGES = [
+      FACE_IMAGES.happy,
+      FACE_IMAGES.normal,
+      FACE_IMAGES.dead,
+      "images/icons/coffee_empty.png",
+      "images/icons/coffee_full.png",
+      "images/icons/grave_rip.png",
+      "images/app/splash.webp"
+    ];
+
+    let booting = true;
+
+    /* 제목 글자 하나씩 떨어지도록 */
+    function splitTitle() {
+      const text = splashTitle.textContent;
+      splashTitle.textContent = "";
+      splashTitle.setAttribute("aria-label", text);
+      [...text].forEach((char, i) => {
+        const span = document.createElement("span");
+        span.className = "ch" + (char === " " ? " is-space" : "");
+        span.style.setProperty("--i", i);
+        span.setAttribute("aria-hidden", "true");
+        span.textContent = char === " " ? "" : char;
+        splashTitle.appendChild(span);
+      });
+    }
+
+    function preload(src) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = img.onerror = resolve;
+        img.src = src;
+      });
+    }
+
+    function finishBoot() {
+      if (!booting) return;
+      booting = false;
+      try { sessionStorage.setItem(SPLASH_SEEN_KEY, "1"); } catch (e) {}
+      splash.classList.add("is-done");
+      document.body.classList.remove("is-booting");
+      setTimeout(() => splash.remove(), 800);
+    }
+
+    function runSplash() {
+      let seen = false;
+      try { seen = sessionStorage.getItem(SPLASH_SEEN_KEY) === "1"; } catch (e) {}
+
+      /* 같은 세션에서 다시 테스트하러 온 경우엔 생략 */
+      if (seen) {
+        booting = false;
+        splash.remove();
+        document.body.classList.remove("is-booting");
+        return;
+      }
+
+      splitTitle();
+
+      let loaded = 0;
+      PRELOAD_IMAGES.forEach(src => preload(src).then(() => { loaded += 1; }));
+
+      const start = performance.now();
+      let shown = 0;
+      let stepIndex = 0;
+
+      /* rAF 대신 타이머: 탭이 잠깐 가려져도 로딩이 멈추지 않게 */
+      const timer = setInterval(tick, 40);
+
+      function tick() {
+        if (!booting) {
+          clearInterval(timer);
+          return;
+        }
+        const elapsed = performance.now() - start;
+        /* 시간 진행(살짝 감속)과 실제 이미지 로딩 중 느린 쪽을 따라감 */
+        const t = Math.min(1, elapsed / SPLASH_MIN_MS);
+        const timeRatio = 1 - Math.pow(1 - t, 2);
+        const assetRatio = loaded / PRELOAD_IMAGES.length;
+        const target = elapsed > SPLASH_MAX_MS ? 1 : Math.min(timeRatio, assetRatio);
+        shown = Math.max(shown, target);
+
+        const pct = Math.round(shown * 100);
+        splashFill.style.width = pct + "%";
+        splashBean.style.left = pct + "%";
+        splashPct.textContent = pct + "%";
+
+        const nextStep = Math.min(SPLASH_STEPS.length - 1, Math.floor(shown * SPLASH_STEPS.length));
+        if (nextStep !== stepIndex) {
+          stepIndex = nextStep;
+          splashStatus.textContent = SPLASH_STEPS[stepIndex];
+          replay(splashStatus, "is-swap");
+        }
+
+        if (shown >= 1) {
+          clearInterval(timer);
+          setTimeout(finishBoot, 420);
+        }
+      }
+
+      splash.addEventListener("click", finishBoot);
+    }
+
+    buildAmbient();
+    runSplash();
     updateCount();
   </script>
 </body>

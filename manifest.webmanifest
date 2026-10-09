@@ -1,0 +1,15 @@
+{
+  "name": "오늘도 과부하",
+  "short_name": "오늘도 과부하",
+  "description": "카페인으로 하루를 버티는 사람들을 위한 익명 대나무숲",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FBF1E2",
+  "theme_color": "#6B3A2A",
+  "lang": "ko",
+  "icons": [
+    { "src": "images/app/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "images/app/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

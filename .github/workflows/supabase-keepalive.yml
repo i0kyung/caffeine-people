@@ -1,0 +1,24 @@
+# Supabase 무료 플랜은 일정 기간 요청이 없으면 프로젝트를 자동 일시정지한다.
+# 3일마다 가벼운 조회를 한 번 보내 메모판 DB가 잠들지 않게 유지한다.
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: "17 3 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping sticky_notes
+        env:
+          SUPABASE_URL: https://rmtkicohvedjlpomutvv.supabase.co
+          # 웹페이지에 이미 공개된 publishable(anon) 키
+          SUPABASE_KEY: sb_publishable_rolH6-HKIeF1fu2FvUk5Kg_44mPNQgu
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$SUPABASE_URL/rest/v1/sticky_notes?select=id&limit=1" \
+            -H "apikey: $SUPABASE_KEY")
+          echo "HTTP $status"
+          test "$status" = "200"
